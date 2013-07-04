@@ -229,6 +229,7 @@ public class AmazonAppstoreObserver extends BasePurchasingObserver {
                     result = new IabResult(IabHelper.BILLING_RESPONSE_RESULT_ERROR, "Invalid sku");
                     break;
             }
+            Log.d(TAG, "Amazon requestId: " + purchaseResponse.getRequestId());
             IabHelper.OnIabPurchaseFinishedListener listener = mBillingService.getRequestListener(purchaseResponse.getRequestId());
             Log.d(TAG, "Result message: " + result.getMessage() + ", SKU: " + purchase.getSku());
             return new Pair<IabHelper.OnIabPurchaseFinishedListener, Pair<IabResult, Purchase>>(listener, new Pair<IabResult, Purchase>(result, purchase));
@@ -236,6 +237,7 @@ public class AmazonAppstoreObserver extends BasePurchasingObserver {
 
         @Override
         protected void onPostExecute(final Pair<IabHelper.OnIabPurchaseFinishedListener, Pair<IabResult, Purchase>> result) {
+            Log.d(TAG, "Amazon onPostExecute Purchase, isNull? " + (result.first == null));
             if (result.first != null) {
                 result.first.onIabPurchaseFinished(result.second.first, result.second.second);
             } else {

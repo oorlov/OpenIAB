@@ -139,7 +139,7 @@ class AppstoreServiceManager {
 
     public Appstore getInstallerAppstore() {
         for (Appstore appstore : appstores) {
-            if (appstore.isInstaller()) {
+            if (appstore.getAppstoreName() == AppstoreName.AMAZON) {
                 return appstore;
             }
         }

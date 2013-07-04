@@ -60,6 +60,7 @@ public class AmazonAppstoreBillingService implements AppstoreInAppBillingService
     @Override
     public void launchPurchaseFlow(Activity act, String sku, String itemType, int requestCode, IabHelper.OnIabPurchaseFinishedListener listener, String extraData) {
         String requestId = PurchasingManager.initiatePurchaseRequest(sku);
+        Log.d(TAG, "Store Amazon listener requestId: " + requestId);
         storeRequestListener(requestId, listener);
     }
 
@@ -80,7 +81,6 @@ public class AmazonAppstoreBillingService implements AppstoreInAppBillingService
             return null;
         }
         if (querySkuDetails) {
-            mInventoryRetrived = new CountDownLatch(1);
             Set<String> querySkus = new HashSet<String>(mInventory.getAllOwnedSkus());
             if (moreItemSkus != null) {
                 querySkus.addAll(moreItemSkus);
@@ -88,11 +88,14 @@ public class AmazonAppstoreBillingService implements AppstoreInAppBillingService
             if (moreSubsSkus != null) {
                 querySkus.addAll(moreSubsSkus);
             }
-            PurchasingManager.initiateItemDataRequest(querySkus);
-            try {
-                mInventoryRetrived.await();
-            } catch (InterruptedException e) {
-                Log.w(TAG, "Amazon SkuDetails fetching interrupted");
+            if (!querySkus.isEmpty()) {
+                mInventoryRetrived = new CountDownLatch(1);
+                PurchasingManager.initiateItemDataRequest(querySkus);
+                try {
+                    mInventoryRetrived.await();
+                } catch (InterruptedException e) {
+                    Log.w(TAG, "Amazon SkuDetails fetching interrupted");
+                }
             }
         }
         Log.d(TAG, "Amazon queryInventory finished. Inventory size: " + mInventory.getAllOwnedSkus().size());
