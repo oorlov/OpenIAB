@@ -137,6 +137,9 @@ public class MainActivity extends Activity {
 
     // The helper object
     OpenIabHelper mHelper;
+    
+    /** is bililng setup is completed */
+    private boolean setupDone = false;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -157,10 +160,10 @@ public class MainActivity extends Activity {
          * want to make it easy for an attacker to replace the public key with one
          * of their own and then fake messages from the server.
          */
-        String base64EncodedPublicKey = "CONSTRUCT_YOUR_KEY_AND_PLACE_IT_HERE";
-        String samsungGroupId = "PLACE_HERE_SAMSUNG_GROUP_ID";
-        String tstoreAppId = "PLACE_HERE_TSTORE_APP_ID";
-        String YANDEX_PUBLIC_KEY = "PLACE_HERE_YANDEX_KEY";
+        String base64EncodedPublicKey = "cONSTRUCT_YOUR_KEY_AND_PLACE_IT_HERE";
+        String samsungGroupId = "pLACE_HERE_SAMSUNG_GROUP_ID";
+        String tstoreAppId = "pLACE_HERE_TSTORE_APP_ID";
+        String YANDEX_PUBLIC_KEY = "pLACE_HERE_YANDEX_KEY";
 
         // Some sanity checks to see if the developer (that's you!) really followed the
         // instructions to run this sample (don't put these checks on your app!)
@@ -200,6 +203,7 @@ public class MainActivity extends Activity {
 
                 // Hooray, IAB is fully set up. Now, let's get an inventory of stuff we own.
                 Log.d(TAG, "Setup successful. Querying inventory.");
+                setupDone = true;
                 mHelper.queryInventoryAsync(mGotInventoryListener);
             }
         });
@@ -263,6 +267,10 @@ public class MainActivity extends Activity {
             return;
         }
 
+        if (!setupDone) {
+            complain("Amazon Purchases Setup is not completed yet");
+            return;
+        }
         // launch the gas purchase UI flow.
         // We will be notified of completion via mPurchaseFinishedListener
         setWaitScreen(true);
@@ -280,6 +288,12 @@ public class MainActivity extends Activity {
     // User clicked the "Upgrade to Premium" button.
     public void onUpgradeAppButtonClicked(View arg0) {
         Log.d(TAG, "Upgrade button clicked; launching purchase flow for upgrade.");
+        
+        if (!setupDone) {
+            complain("Amazon Purchases Setup is not completed yet");
+            return;
+        }
+
         setWaitScreen(true);
         
         /* TODO: for security, generate your payload here for verification. See the comments on 
@@ -294,6 +308,11 @@ public class MainActivity extends Activity {
     // "Subscribe to infinite gas" button clicked. Explain to user, then start purchase
     // flow for subscription.
     public void onInfiniteGasButtonClicked(View arg0) {
+        if (!setupDone) {
+            complain("Amazon Purchases Setup is not completed yet");
+            return;
+        }
+
         if (!mHelper.subscriptionsSupported()) {
             complain("Subscriptions not supported on your device yet. Sorry!");
             return;
