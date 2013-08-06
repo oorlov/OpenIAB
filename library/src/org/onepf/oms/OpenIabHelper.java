@@ -194,6 +194,7 @@ public class OpenIabHelper {
         mServiceManager.startSetup(new AppstoreServiceManager.OnInitListener() {
             @Override
             public void onInitFinished() {
+                Log.d(TAG, "onInitFinished() ");
                 
                 mAppstore = mServiceManager.selectBillingService();
                 if (mAppstore == null) {
@@ -205,6 +206,7 @@ public class OpenIabHelper {
                 mAppstoreBillingService = mAppstore.getInAppBillingService(); 
                 mAppstoreBillingService.startSetup(new OnIabSetupFinishedListener() {
                     public void onIabSetupFinished(IabResult result) {
+                        Log.d(TAG, "onIabSetupFinished() result: " + result);
                         mSetupDone = true;
                         listener.onIabSetupFinished(result);
                     }
