@@ -35,6 +35,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 
 /**
@@ -197,7 +198,7 @@ public class MainActivity extends Activity {
 
                 if (!result.isSuccess()) {
                     // Oh noes, there was a problem.
-                    complain("Problem setting up in-app billing: " + result);
+                    complainE("Problem setting up in-app billing: " + result);
                     return;
                 }
 
@@ -214,7 +215,7 @@ public class MainActivity extends Activity {
         public void onQueryInventoryFinished(IabResult result, Inventory inventory) {
             Log.d(TAG, "Query inventory finished.");
             if (result.isFailure()) {
-                complain("Failed to query inventory: " + result);
+                complainE("Failed to query inventory: " + result);
                 return;
             }
 
@@ -381,12 +382,12 @@ public class MainActivity extends Activity {
         public void onIabPurchaseFinished(IabResult result, Purchase purchase) {
             Log.d(TAG, "Purchase finished: " + result + ", purchase: " + purchase);
             if (result.isFailure()) {
-                complain("Error purchasing: " + result);
+                complainE("Error purchasing: " + result);
                 setWaitScreen(false);
                 return;
             }
             if (!verifyDeveloperPayload(purchase)) {
-                complain("Error purchasing. Authenticity verification failed.");
+                complainE("Error purchasing. Authenticity verification failed.");
                 setWaitScreen(false);
                 return;
             }
@@ -435,7 +436,7 @@ public class MainActivity extends Activity {
                 alert("You filled 1/4 tank. Your tank is now " + String.valueOf(mTank) + "/4 full!");
             }
             else {
-                complain("Error while consuming: " + result);
+                complainE("Error while consuming: " + result);
             }
             updateUi();
             setWaitScreen(false);
@@ -497,6 +498,11 @@ public class MainActivity extends Activity {
         findViewById(R.id.screen_wait).setVisibility(set ? View.VISIBLE : View.GONE);
     }
 
+    void complainE(String message) {
+        Log.e(TAG, "**** TrivialDrive Error: " + message);
+        Toast.makeText(this, "Welcome back, Driver!", Toast.LENGTH_SHORT).show();
+    }
+    
     void complain(String message) {
         Log.e(TAG, "**** TrivialDrive Error: " + message);
         alert("Error: " + message);
