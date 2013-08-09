@@ -192,7 +192,7 @@ public class OpenIabHelper {
     public void startSetup(final IabHelper.OnIabSetupFinishedListener listener) {
         mServiceManager.startSetup(new AppstoreServiceManager.OnInitListener() {
             @Override
-            public void onInitFinished() {
+            public void onInitFinished() {// called in UI when the last openstore service is connected and analyzed  
                 
                 mAppstore = mServiceManager.selectBillingService();
                 if (mAppstore == null) {
