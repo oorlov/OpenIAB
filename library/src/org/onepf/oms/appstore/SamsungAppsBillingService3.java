@@ -158,6 +158,17 @@ public class SamsungAppsBillingService3 implements AppstoreInAppBillingService {
 
     @Override
     public void launchPurchaseFlow(Activity act, String sku, String itemType, int requestCode, OnIabPurchaseFinishedListener listener, String extraData) {
+        Bundle bundle = new Bundle();
+        bundle.putString("THIRD_PARTY_NAME", act.getPackageName());
+        bundle.putString("ITEM_GROUP_ID", "_itemGroupId");
+        bundle.putString("ITEN_ID", "_itemId");
+        
+        ComponentName cmpName = new ComponentName("com.set.android.iap", "com.sec.android.iap.activity.PaymentMethodListActivity");
+        Intent intent = new Intent(Intent.ACTION_MAIN);
+        intent.addCategory(Intent.CATEGORY_LAUNCHER);
+        intent.setComponent(cmpName);
+        intent.putExtras(bundle);
+        act.startActivityForResult(intent, requestCode);
     }
 
     @Override
