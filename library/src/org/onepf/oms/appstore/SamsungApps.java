@@ -16,6 +16,9 @@
 
 package org.onepf.oms.appstore;
 
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.Signature;
 import org.onepf.oms.Appstore;
 import org.onepf.oms.AppstoreInAppBillingService;
 import org.onepf.oms.DefaultAppstore;
@@ -29,6 +32,10 @@ import android.content.Context;
  * Time: 12:28
  */
 public class SamsungApps extends DefaultAppstore {
+    private static final int IAP_SIGNATURE_HASHCODE = 0x7a7eaf4b;
+    private static final String IAP_PACKAGE_NAME = "com.sec.android.iap";
+    private static final String IAP_SERVICE_NAME = "com.sec.android.iap.service.iapService";
+
     private AppstoreInAppBillingService mBillingService;
     private Context mContext;
     private String mItemGroupId;
@@ -47,10 +54,24 @@ public class SamsungApps extends DefaultAppstore {
         return isDebugMode;
     }
 
+    /**
+     * @return true if Samsung Apps is installed in the system
+     */
     @Override
     public boolean isBillingAvailable(String packageName) {
-        return isDebugMode;
-        // TODO: write implementation
+        Intent serviceIntent = new Intent(IAP_SERVICE_NAME);
+        boolean iapInstalled = !mContext.getPackageManager().queryIntentServices(serviceIntent, 0).isEmpty();
+        if (iapInstalled) {
+            try {
+                Signature[] signatures = mContext.getPackageManager().getPackageInfo(IAP_PACKAGE_NAME, PackageManager.GET_SIGNATURES).signatures;
+                if (signatures[0].hashCode() != IAP_SIGNATURE_HASHCODE) {
+                    iapInstalled = false;
+                }
+            } catch (Exception e) {
+                iapInstalled = false;
+            }
+        }
+        return isDebugMode || iapInstalled;
     }
     
     @Override

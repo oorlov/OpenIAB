@@ -36,11 +36,6 @@ import com.sec.android.iap.IAPConnector;
 public class SamsungAppsBillingService3 implements AppstoreInAppBillingService {
     private static final String TAG = SamsungAppsBillingService3.class.getSimpleName();
 
-    // IAP Signature Hashcode
-    // ========================================================================
-    public static final int IAP_SIGNATURE_HASHCODE = 0x7a7eaf4b;
-    // ========================================================================
-
     private static final int HONEYCOMB_MR1 = 12;
     
     // IAP Modes are used for IAPConnector.init() 
@@ -74,12 +69,6 @@ public class SamsungAppsBillingService3 implements AppstoreInAppBillingService {
     public static final String ITEM_TYPE_NON_CONSUMABLE = "01";
     public static final String ITEM_TYPE_SUBSCRIPTION = "02";
     public static final String ITEM_TYPE_ALL = "10";
-    // ========================================================================
-
-    // IAP NAME
-    // ========================================================================
-    public static final String IAP_PACKAGE_NAME = "com.sec.android.iap";
-    public static final String IAP_SERVICE_NAME = "com.sec.android.iap.service.iapService";
     // ========================================================================
 
     // IAP 호출시 onActivityResult 에서 받기 위한 요청 코드
