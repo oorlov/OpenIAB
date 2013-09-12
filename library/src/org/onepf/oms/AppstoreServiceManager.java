@@ -216,7 +216,8 @@ public class AppstoreServiceManager {
         } else if (higherVersion.size() > 0) {  // or one of higher version
             return higherVersion.get(new Random().nextInt(higherVersion.size()));
         } else {                                // ok, return no matter what
-            return new ArrayList<Appstore>(candidates.values()).get(new Random().nextInt(candidates.size())); 
+            List<Appstore> values = new ArrayList<Appstore>(candidates.values());
+            return values.get(new Random().nextInt(candidates.size()));
         }
     }
     
