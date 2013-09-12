@@ -204,6 +204,7 @@ public class OpenIabHelper {
                 mAppstoreBillingService = mAppstore.getInAppBillingService(); 
                 mAppstoreBillingService.startSetup(new OnIabSetupFinishedListener() {
                     public void onIabSetupFinished(IabResult result) {
+                        // TODO: if result is not ok, is setupDone true?
                         mSetupDone = true;
                         listener.onIabSetupFinished(result);
                     }

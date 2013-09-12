@@ -19,6 +19,8 @@ package org.onepf.oms.appstore;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.Signature;
+import android.net.Uri;
+import android.util.Log;
 import org.onepf.oms.Appstore;
 import org.onepf.oms.AppstoreInAppBillingService;
 import org.onepf.oms.DefaultAppstore;
@@ -26,22 +28,26 @@ import org.onepf.oms.OpenIabHelper;
 
 import android.content.Context;
 
+import java.io.*;
+
 /**
  * User: Boris Minaev
  * Date: 22.04.13
  * Time: 12:28
  */
 public class SamsungApps extends DefaultAppstore {
+    private static final String TAG = SamsungApps.class.getSimpleName();
+
     private static final int IAP_SIGNATURE_HASHCODE = 0x7a7eaf4b;
-    private static final String IAP_PACKAGE_NAME = "com.sec.android.iap";
-    private static final String IAP_SERVICE_NAME = "com.sec.android.iap.service.iapService";
+    public static final String IAP_PACKAGE_NAME = "com.sec.android.iap";
+    public static final String IAP_SERVICE_NAME = "com.sec.android.iap.service.iapService";
 
     private AppstoreInAppBillingService mBillingService;
     private Context mContext;
     private String mItemGroupId;
 
     // isDebugMode = true -> always returns Samsung Apps is installer
-    private final boolean isDebugMode = false;
+    private final boolean isDebugMode = true;
 
     public SamsungApps(Context context, String itemGroupId) {
         mContext = context;
@@ -71,6 +77,12 @@ public class SamsungApps extends DefaultAppstore {
                 iapInstalled = false;
             }
         }
+//        if (!iapInstalled) {
+//            Intent intent = new Intent();
+//            intent.setData(Uri.parse("samsungapps://ProductDetail/com.sec.android.iap"));
+//            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
+//            mContext.startActivity(intent);
+//        }
         return isDebugMode || iapInstalled;
     }
     
@@ -82,7 +94,7 @@ public class SamsungApps extends DefaultAppstore {
     @Override
     public AppstoreInAppBillingService getInAppBillingService() {
         if (mBillingService == null) {
-            mBillingService = new SamsungAppsBillingService(mContext, mItemGroupId);
+            mBillingService = new SamsungAppsBillingService(mContext);
         }
         return mBillingService;
     }
