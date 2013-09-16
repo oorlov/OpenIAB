@@ -17,12 +17,16 @@
 package org.onepf.oms;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.CountDownLatch;
 
 import org.onepf.oms.appstore.AmazonAppstore;
 import org.onepf.oms.appstore.GooglePlay;
+import org.onepf.oms.appstore.OpenAppstore;
 import org.onepf.oms.appstore.SamsungApps;
 import org.onepf.oms.appstore.TStore;
 import org.onepf.oms.appstore.googleUtils.IabException;
@@ -33,26 +37,47 @@ import org.onepf.oms.appstore.googleUtils.Inventory;
 import org.onepf.oms.appstore.googleUtils.Purchase;
 
 import android.app.Activity;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
+import android.content.pm.PackageManager.NameNotFoundException;
 import android.os.Handler;
+import android.os.IBinder;
+import android.os.RemoteException;
 import android.util.Log;
 
 /**
- * User: Boris Minaev
- * Date: 16.04.13
- * Time: 16:42
+ * 
+ * 
+ * @author Boris Minaev, Oleg Orlov
+ * @since 16.04.13
  */
-
 public class OpenIabHelper {
-    private static final String TAG = "OpenIabHelper";
-    private final Context mContext;
-    private final AppstoreServiceManager mServiceManager;
-    private Appstore mAppstore;
-    private AppstoreInAppBillingService mAppstoreBillingService;
-
+    private static final String TAG = OpenIabHelper.class.getSimpleName();
     // Is debug logging enabled?
     private static final boolean mDebugLog = false;
+    
+    private static final String BIND_INTENT = "org.onepf.oms.openappstore.BIND";
+    
+    private final Context context;
+    
+    /** selected appstore */
+    private Appstore mAppstore;
+
+    /** selected appstore billing service */
+    private AppstoreInAppBillingService mAppstoreBillingService;
+    
+    /** Candidates for billing. If not provided by user than discovered OpenStores + extraStores
+     * {@link #discoverOpenStores(Context, List, Map, OnInitListener)}
+     */
+    private List<Appstore> appstores;
+    private Map<String, String> storeKeys;
+    
+    /** Developer preferred store names */
+    private String[] prefferedStoreNames = new String[] {};
 
     // Is setup done?
     private boolean mSetupDone = false;
@@ -159,42 +184,40 @@ public class OpenIabHelper {
         }
     }
 
-    
-    public interface OnOpenIabHelperInitFinished {
-        public void onOpenIabHelperInitFinished();
-    }
-
-    /**
-     * @deprecated TODO: need to add limited list of stores to avoid store elections 
-     */
-    public OpenIabHelper(Context context, AppstoreServiceManager manager, Map<String, String> extra) {
-        mContext = context;
-        mServiceManager = manager;
-    }
-
     public OpenIabHelper(Context context, Map<String, String> storeKeys) {
         this(context, storeKeys, null);
     }
     
+    /**
+     * @param storeKeys - map [ storeName -> publicKey ]
+     * @param prefferedStoreNames - will be used if package installer cannot be found
+     */
     public OpenIabHelper(Context context, Map<String, String> storeKeys, String[] prefferedStores) {
-        this.mContext = context;
-        this.mServiceManager = new AppstoreServiceManager(context, storeKeys, prefferedStores, new Appstore[] {
-                    new GooglePlay(context, storeKeys.get(OpenIabHelper.NAME_GOOGLE))
-                ,   new AmazonAppstore(context)
-                ,   new SamsungApps(context, storeKeys.get(OpenIabHelper.NAME_SAMSUNG))
-                ,   new TStore(context, storeKeys.get(OpenIabHelper.NAME_TSTORE))
-        });
+        this(context, storeKeys, prefferedStores, null);
+    }
+    /**
+     * @param storeKeys - map [ storeName -> publicKey ]
+     * @param prefferedStoreNames - will be used if package installer cannot be found
+     * @param storeList - exact list of stores to participate in store election
+     */
+    public OpenIabHelper(Context context, Map<String, String> storeKeys, String[] prefferedStores, Appstore[] storeList) {
+        this.context = context;
+        this.storeKeys = storeKeys;
+        this.prefferedStoreNames = prefferedStores != null ? prefferedStores : this.prefferedStoreNames;
+        
+        this.appstores = storeList != null ? new ArrayList<Appstore>(Arrays.asList(storeList)) : null;
     }
 
     /**
      *  Discover available stores and select the best billing service. Calls listener when service is found
      */
     public void startSetup(final IabHelper.OnIabSetupFinishedListener listener) {
-        mServiceManager.startSetup(new AppstoreServiceManager.OnInitListener() {
+        
+        final OpenIabHelper.OnInitListener onInitListener = new OpenIabHelper.OnInitListener() {
             @Override
             public void onInitFinished() {
                 
-                mAppstore = mServiceManager.selectBillingService();
+                mAppstore = selectBillingService();
                 if (mAppstore == null) {
                     IabResult iabResult = new IabResult(BILLING_RESPONSE_RESULT_BILLING_UNAVAILABLE, "Billing isn't supported");
                     listener.onIabSetupFinished(iabResult);
@@ -209,9 +232,165 @@ public class OpenIabHelper {
                     }
                 });
             }
-        });
+        };
+        // if appstores are not specified by user - look up for all available stores
+        if (appstores == null) {
+            appstores = new ArrayList<Appstore>(Arrays.asList(new Appstore[] {
+                        new GooglePlay(context, storeKeys.get(OpenIabHelper.NAME_GOOGLE))
+                    ,   new AmazonAppstore(context)
+                    ,   new SamsungApps(context, storeKeys.get(OpenIabHelper.NAME_SAMSUNG))
+                    ,   new TStore(context, storeKeys.get(OpenIabHelper.NAME_TSTORE))
+            }));
+
+            discoverOpenStores(context, appstores, storeKeys, onInitListener);
+        } else {
+            onInitListener.onInitFinished();
+        }
     }
 
+    /**
+     * Discover all OpenStore services, checks them and build {@link #appstores} list<br>
+     * 
+     * @param appstores - discovered OpenStores will be added here. Must be not null
+     * @param listener - called back when all OpenStores collected and analyzed
+     * 
+     * TODO: better to acquire all necessary params before store election
+     */
+    public static void discoverOpenStores(final Context context, final List<Appstore> appstores, final Map<String, String> storeKeys, final OpenIabHelper.OnInitListener listener) {
+        PackageManager packageManager = context.getPackageManager();
+        final Intent intentAppstoreServices = new Intent(BIND_INTENT);
+        List<ResolveInfo> infoList = packageManager.queryIntentServices(intentAppstoreServices, 0);
+        if (infoList.size() == 0) {
+            listener.onInitFinished();
+        }
+
+        final CountDownLatch countDownLatch = new CountDownLatch(infoList.size());
+        for (ResolveInfo info : infoList) {
+            String packageName = info.serviceInfo.packageName;
+            String name = info.serviceInfo.name;
+            Intent intentAppstore = new Intent(intentAppstoreServices);
+            intentAppstore.setClassName(packageName, name);
+            context.bindService(intentAppstore, new ServiceConnection() {
+                @Override
+                public void onServiceConnected(ComponentName name, IBinder service) {
+                    Log.d(TAG, "appstoresService connected for component: " + name.flattenToShortString());
+                    IOpenAppstore openAppstoreService = IOpenAppstore.Stub.asInterface(service);
+
+                    String appstoreName = null;
+                    try {
+                        appstoreName = openAppstoreService.getAppstoreName();
+                    } catch (RemoteException e) {
+                        Log.e(TAG, "onServiceConnected() ComponentName: " + name, e);
+                    }
+                    
+                    if (appstoreName == null) { // no name - no service
+                        Log.e(TAG, "onServiceConnected() Appstore doesn't have name. Skipped. ComponentName: " + name);
+                        countDownLatch.countDown();
+                        if (countDownLatch.getCount() == 0) {
+                            listener.onInitFinished();
+                        }
+                        return;
+                    }
+                    
+                    final OpenAppstore openAppstore = new OpenAppstore(openAppstoreService, context);
+
+                    String publicKey = storeKeys.get(appstoreName);
+
+                    if (openAppstore.initBilling(publicKey)) {
+                        synchronized (appstores) {
+                            Log.d(TAG, "onServiceConnected() add new open store by type: " + openAppstore.getAppstoreName());
+                            if (appstores.contains(openAppstore) == false) {
+                                appstores.add(openAppstore);
+                            }
+                        }
+                    } else {
+                        Log.d(TAG, "onServiceConnected(): billing init failed");
+                    }
+
+                    countDownLatch.countDown();
+                    if (countDownLatch.getCount() == 0) {
+                        listener.onInitFinished();
+                    }
+
+                }
+
+                @Override
+                public void onServiceDisconnected(ComponentName name) {
+                    Log.d(TAG, "onServiceDisconnected() appstoresService disconnected for component: " + name.flattenToShortString());
+                    //Nothing to do here
+                }
+            }, Context.BIND_AUTO_CREATE);
+        }
+    }
+
+    
+    /**
+     * Lookup for requested service in store based on isPackageInstaller() & isBillingAvailable()
+     * <p>
+     * Scenario:
+     * <li>
+     * - look for installer: if exists and supports billing service - we done <li>  
+     * - rest of stores who support billing considered as candidates<p><li>
+     * 
+     * - find candidate according to [prefferedStoreNames]. if found - we done<p><li>
+     * 
+     * - select candidate randomly from 3 groups based on published package version<li> 
+     *   - published version == app.versionCode<li>
+     *   - published version  > app.versionCode<li>
+     *   - published version < app.versionCode
+     * 
+     */
+    public Appstore selectBillingService() {
+        String packageName = context.getPackageName();
+        // candidates:
+        Map<String, Appstore> candidates = new HashMap<String, Appstore>();
+        //
+        for (Appstore appstore : appstores) {
+            if (appstore.isBillingAvailable(packageName)) {
+                candidates.put(appstore.getAppstoreName(), appstore);
+            } else {
+                continue; // for billing we cannot select store without billing
+            }
+            if (appstore.isPackageInstaller(packageName)) {
+                return appstore;
+            }
+        }
+        if (candidates.size() == 0) return null;
+        
+        // lookup for developer preffered stores
+        for (int i = 0; i < prefferedStoreNames.length; i++) {
+            Appstore candidate = candidates.get(prefferedStoreNames[i]);
+            if (candidate != null) {
+                return candidate;
+            }
+        }
+        // nothing found. select something that matches package version
+        int versionCode = Appstore.PACKAGE_VERSION_UNDEFINED; 
+        try {
+            versionCode = context.getPackageManager().getPackageInfo(packageName, 0).versionCode;
+        } catch (NameNotFoundException e) {
+            Log.e(TAG, "Are we installed?", e);
+        }
+        List<Appstore> sameVersion = new ArrayList<Appstore>();
+        List<Appstore> higherVersion = new ArrayList<Appstore>();
+        for (Appstore candidate : candidates.values()) {
+            final int storeVersion = candidate.getPackageVersion(packageName);
+            if (storeVersion == versionCode) {
+                 sameVersion.add(candidate);
+            } else if (storeVersion > versionCode) {
+                higherVersion.add(candidate);
+            }
+        }
+        // use random if found stores with same version of package  
+        if (sameVersion.size() > 0) {
+            return sameVersion.get(new Random().nextInt(sameVersion.size()));
+        } else if (higherVersion.size() > 0) {  // or one of higher version
+            return higherVersion.get(new Random().nextInt(higherVersion.size()));
+        } else {                                // ok, return no matter what
+            return new ArrayList<Appstore>(candidates.values()).get(new Random().nextInt(candidates.size())); 
+        }
+    }
+    
     public void dispose() {
         logDebug("Disposing.");
         checkSetupDone("dispose");
@@ -411,6 +590,14 @@ public class OpenIabHelper {
 
     void logWarn(String msg) {
         Log.w(TAG, "In-app billing warning: " + msg);
+    }
+    
+    public interface OnInitListener {
+        public void onInitFinished();
+    }
+
+    public interface OnOpenIabHelperInitFinished {
+        public void onOpenIabHelperInitFinished();
     }
 
 }
