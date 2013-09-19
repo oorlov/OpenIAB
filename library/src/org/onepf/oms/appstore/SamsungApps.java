@@ -47,7 +47,7 @@ public class SamsungApps extends DefaultAppstore {
     private String mItemGroupId;
 
     // isDebugMode = true -> always returns Samsung Apps is installer
-    private final boolean isDebugMode = true;
+    private final boolean isDebugMode = false;
 
     public SamsungApps(Context context, String itemGroupId) {
         mContext = context;
@@ -94,7 +94,7 @@ public class SamsungApps extends DefaultAppstore {
     @Override
     public AppstoreInAppBillingService getInAppBillingService() {
         if (mBillingService == null) {
-            mBillingService = new SamsungAppsBillingService(mContext);
+            mBillingService = new SamsungAppsBillingService(mContext, mItemGroupId);
         }
         return mBillingService;
     }

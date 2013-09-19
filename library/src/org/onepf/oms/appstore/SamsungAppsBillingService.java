@@ -16,10 +16,14 @@
 
 package org.onepf.oms.appstore;
 
-import java.util.List;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 import android.util.Log;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.onepf.oms.AppstoreInAppBillingService;
+import org.onepf.oms.OpenIabHelper;
 import org.onepf.oms.appstore.googleUtils.*;
 import org.onepf.oms.appstore.googleUtils.IabHelper.OnIabPurchaseFinishedListener;
 import org.onepf.oms.appstore.googleUtils.IabHelper.OnIabSetupFinishedListener;
@@ -46,15 +50,16 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
     public static final int IAP_MODE_TEST_FAIL = -1;
 
     public static final String IAP_SERVICE_NAME = "com.sec.android.iap.service.iapService";
-    public static final String ACCOUNT_ACTIVITY_NAME = "com.sec.android.iap.AccountActivity";
+    public static final String ACCOUNT_ACTIVITY_NAME = "com.sec.android.iap.activity.AccountActivity";
+    public static final String PAYMENT_ACTIVITY_NAME = "com.sec.android.iap.activity.PaymentMethodListActivity";
+    // ========================================================================
     // BILLING RESPONSE CODE
     // ========================================================================
     public static final int IAP_RESPONSE_RESULT_OK = 0;
     public static final int IAP_RESPONSE_RESULT_UNAVAILABLE = 2;
     // ========================================================================
-
     public static final int FLAG_INCLUDE_STOPPED_PACKAGES = 32;
-
+    // ========================================================================
     // BUNDLE KEY
     // ========================================================================
     public static final String KEY_NAME_THIRD_PARTY_NAME = "THIRD_PARTY_NAME";
@@ -66,7 +71,20 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
     public static final String KEY_NAME_RESULT_LIST = "RESULT_LIST";
     public static final String KEY_NAME_RESULT_OBJECT = "RESULT_OBJECT";
     // ========================================================================
-
+    // ITEM JSON KEY
+    // ========================================================================
+    public static final String JSON_KEY_ITEM_ID = "mItemId";
+    public static final String JSON_KEY_ITEM_NAME = "mItemName";
+    public static final String JSON_KEY_ITEM_DESC = "mItemDesc";
+    public static final String JSON_KEY_ITEM_PRICE = "mItemPrice";
+    public static final String JSON_KEY_CURRENCY_UNIT = "mCurrencyUnit";
+    public static final String JSON_KEY_ITEM_IMAGE_URL = "mItemImageUrl";
+    public static final String JSON_KEY_ITEM_DOWNLOAD_URL = "mItemDownloadUrl";
+    public static final String JSON_KEY_PURCHASE_DATE = "mPurchaseDate";
+    public static final String JSON_KEY_PAYMENT_ID = "mPaymentId";
+    public static final String JSON_KEY_TYPE = "mType";
+    public static final String JSON_KEY_ITEM_PRICE_STRING = "mItemPriceString";
+    // ========================================================================
     // ITEM TYPE
     // ========================================================================
     public static final String ITEM_TYPE_CONSUMABLE = "00";
@@ -74,43 +92,21 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
     public static final String ITEM_TYPE_SUBSCRIPTION = "02";
     public static final String ITEM_TYPE_ALL = "10";
     // ========================================================================
-
-    // IAP 호출시 onActivityResult 에서 받기 위한 요청 코드
     // define request code for IAPService.
     // ========================================================================
     public static final int REQUEST_CODE_IS_IAP_PAYMENT = 1;
     public static final int REQUEST_CODE_IS_ACCOUNT_CERTIFICATION = 2;
     // ========================================================================
-
-    // 3rd party 에 전달되는 코드 정의
-    // define status code passed to 3rd party application 
+    // define status code passed to 3rd party application
     // ========================================================================
-    /** 처리결과가 성공 */
     final public static int IAP_ERROR_NONE = 0;
-
-    /** 결제 취소일 경우 */
     final public static int IAP_PAYMENT_IS_CANCELED = 1;
-
-    /** initialization 과정중 에러 발생 */
     final public static int IAP_ERROR_INITIALIZATION = -1000;
-
-    /** IAP 업그레이드가 필요함 */
     final public static int IAP_ERROR_NEED_APP_UPGRADE = -1001;
-
-    /** 공통 에러코드 */
     final public static int IAP_ERROR_COMMON = -1002;
-
-    /** NON CONSUMABLE 재구매일 경우 */
     final public static int IAP_ERROR_ALREADY_PURCHASED = -1003;
-
-    /** 결제상세 호출시 Bundle 값 없을 경우 */
     final public static int IAP_ERROR_WHILE_RUNNING = -1004;
-
-    /** 요청한 상품 목록이 없는 경우 */
     final public static int IAP_ERROR_PRODUCT_DOES_NOT_EXIST = -1005;
-
-    /** 결제 결과가 성공은 아니지만 구매되었을 수 있기 때문에
-     *  구매한 상품 목록 확인이 필요할 경우 */
     final public static int IAP_ERROR_CONFIRM_INBOX = -1006;
     // ========================================================================
 
@@ -118,12 +114,13 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
     private IAPConnector mIapConnector = null;
     private Context mContext;
     private ServiceConnection mServiceConnection;
-
+    private String mItemGroupId;
 
     private OnIabSetupFinishedListener setupListener = null;
 
-    public SamsungAppsBillingService(Context context) {
+    public SamsungAppsBillingService(Context context, String groupId) {
         mContext = context;
+        mItemGroupId = groupId;
     }
 
     @Override
@@ -132,7 +129,6 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
             @Override
             public void onServiceConnected(ComponentName name, IBinder service) {
                 mIapConnector = IAPConnector.Stub.asInterface(service);
-                boolean success = true;
                 try {
                     Bundle result = mIapConnector.init(IAP_MODE_COMMERCIAL);
                     if (result != null) {
@@ -169,17 +165,81 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
     
     @Override
     public Inventory queryInventory(boolean querySkuDetails, List<String> moreItemSkus, List<String> moreSubsSkus) throws IabException {
-        return null;
+        Inventory inventory = new Inventory();
+        Date date = new Date();
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyyMMdd", Locale.getDefault());
+        String today = simpleDateFormat.format(date);
+        Bundle itemInbox = null;
+        try {
+            // TODO: change endNum to request all items
+            itemInbox = mIapConnector.getItemsInbox(mContext.getPackageName(), mItemGroupId, 1, 100, "20000101", today);
+        } catch (RemoteException e) {
+            Log.e(TAG, "Samsung getItemsInbox: " + e.getMessage());
+        }
+        if (itemInbox != null && itemInbox.getInt(KEY_NAME_STATUS_CODE) == IAP_ERROR_NONE) {
+            ArrayList<String> items = itemInbox.getStringArrayList(KEY_NAME_RESULT_LIST);
+            for (String itemString : items) {
+                try {
+                    JSONObject item = new JSONObject(itemString);
+                    String itemId = item.getString(JSON_KEY_ITEM_ID);
+                    String rawType = item.getString(JSON_KEY_TYPE);
+                    String itemType = rawType.equals(ITEM_TYPE_SUBSCRIPTION) ? IabHelper.ITEM_TYPE_SUBS : IabHelper.ITEM_TYPE_INAPP;
+                    Purchase purchase = new Purchase(OpenIabHelper.NAME_SAMSUNG);
+                    purchase.setItemType(itemType);
+                    purchase.setSku(OpenIabHelper.getSku(OpenIabHelper.NAME_SAMSUNG, itemId));
+                    inventory.addPurchase(purchase);
+                } catch (JSONException e) {
+                    Log.e(TAG, "JSON parse error: " + e.getMessage());
+                }
+            }
+        }
+        if (querySkuDetails) {
+            Set<String> queryIds = new HashSet<String>();
+            if (moreItemSkus != null) {
+                queryIds.addAll(moreItemSkus);
+            }
+            if (moreSubsSkus != null) {
+                queryIds.addAll(moreSubsSkus);
+            }
+            if (queryIds.size() > 0) {
+                Bundle itemList = null;
+                try {
+                    itemList = mIapConnector.getItemList(IAP_MODE_COMMERCIAL, mContext.getPackageName(), mItemGroupId, 1, 100, ITEM_TYPE_ALL);
+                } catch (RemoteException e) {
+                    Log.e(TAG, "Samsung getItemList: " + e.getMessage());
+                }
+                if (itemList != null && itemList.getInt(KEY_NAME_STATUS_CODE) == 0) {
+                    ArrayList<String> items = itemList.getStringArrayList(KEY_NAME_RESULT_LIST);
+                    for (String itemString : items) {
+                        try {
+                            JSONObject item = new JSONObject(itemString);
+                            String itemId = item.getString(JSON_KEY_ITEM_ID);
+                            if (queryIds.contains(itemId)) {
+                                Purchase purchase = new Purchase(OpenIabHelper.NAME_SAMSUNG);
+                                String rawType = item.getString(JSON_KEY_TYPE);
+                                String itemType = rawType.equals(ITEM_TYPE_SUBSCRIPTION) ? IabHelper.ITEM_TYPE_SUBS : IabHelper.ITEM_TYPE_INAPP;
+                                purchase.setItemType(itemType);
+                                purchase.setSku(itemId);
+                                inventory.addPurchase(purchase);
+                            }
+                        } catch (JSONException e) {
+                            Log.e(TAG, "JSON parse error: " + e.getMessage());
+                        }
+                    }
+                }
+            }
+        }
+        return inventory;
     }
 
     @Override
     public void launchPurchaseFlow(Activity act, String sku, String itemType, int requestCode, OnIabPurchaseFinishedListener listener, String extraData) {
         Bundle bundle = new Bundle();
-        bundle.putString("THIRD_PARTY_NAME", act.getPackageName());
-        bundle.putString("ITEM_GROUP_ID", "_itemGroupId");
-        bundle.putString("ITEN_ID", "_itemId");
+        bundle.putString(KEY_NAME_THIRD_PARTY_NAME, act.getPackageName());
+        bundle.putString(KEY_NAME_ITEM_GROUP_ID, mItemGroupId);
+        bundle.putString(KEY_NAME_ITEM_ID, sku);
         
-        ComponentName cmpName = new ComponentName("com.set.android.iap", "com.sec.android.iap.activity.PaymentMethodListActivity");
+        ComponentName cmpName = new ComponentName(SamsungApps.IAP_PACKAGE_NAME, PAYMENT_ACTIVITY_NAME);
         Intent intent = new Intent(Intent.ACTION_MAIN);
         intent.addCategory(Intent.CATEGORY_LAUNCHER);
         intent.setComponent(cmpName);
