@@ -92,11 +92,6 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
     public static final String ITEM_TYPE_SUBSCRIPTION = "02";
     public static final String ITEM_TYPE_ALL = "10";
     // ========================================================================
-    // define request code for IAPService.
-    // ========================================================================
-    public static final int REQUEST_CODE_IS_IAP_PAYMENT = 1;
-    public static final int REQUEST_CODE_IS_ACCOUNT_CERTIFICATION = 2;
-    // ========================================================================
     // define status code passed to 3rd party application
     // ========================================================================
     final public static int IAP_ERROR_NONE = 0;
@@ -115,8 +110,13 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
     private Context mContext;
     private ServiceConnection mServiceConnection;
     private String mItemGroupId;
+    private String mPurchasingItemType;
 
     private OnIabSetupFinishedListener setupListener = null;
+    // The listener registered on launchPurchaseFlow, which we have to call back when
+    // the purchase finishes
+    private OnIabPurchaseFinishedListener mPurchaseListener = null;
+    private int mRequestCode;
 
     public SamsungAppsBillingService(Context context, String groupId) {
         mContext = context;
@@ -233,9 +233,9 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
     }
 
     @Override
-    public void launchPurchaseFlow(Activity act, String sku, String itemType, int requestCode, OnIabPurchaseFinishedListener listener, String extraData) {
+    public void launchPurchaseFlow(Activity activity, String sku, String itemType, int requestCode, OnIabPurchaseFinishedListener listener, String extraData) {
         Bundle bundle = new Bundle();
-        bundle.putString(KEY_NAME_THIRD_PARTY_NAME, act.getPackageName());
+        bundle.putString(KEY_NAME_THIRD_PARTY_NAME, activity.getPackageName());
         bundle.putString(KEY_NAME_ITEM_GROUP_ID, mItemGroupId);
         bundle.putString(KEY_NAME_ITEM_ID, sku);
         
@@ -244,22 +244,64 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
         intent.addCategory(Intent.CATEGORY_LAUNCHER);
         intent.setComponent(cmpName);
         intent.putExtras(bundle);
-        act.startActivityForResult(intent, requestCode);
+        mRequestCode = requestCode;
+        mPurchaseListener = listener;
+        mPurchasingItemType = itemType;
+        Log.d(TAG, "Request code: " + requestCode);
+        activity.startActivityForResult(intent, requestCode);
     }
 
     @Override
     public boolean handleActivityResult(int requestCode, int resultCode, Intent data) {
-        return false;
+        if (requestCode != mRequestCode) {
+            return false;
+        }
+        IabResult result = new IabResult(IabHelper.BILLING_RESPONSE_RESULT_ERROR, "Unknown error");
+        Purchase purchase = new Purchase(OpenIabHelper.NAME_SAMSUNG);
+        if (data != null) {
+            Bundle extras = data.getExtras();
+            if (extras != null) {
+                int statusCode = extras.getInt(KEY_NAME_STATUS_CODE);
+                String errorMsg = extras.getString(KEY_NAME_ERROR_STRING);
+                String itemId = extras.getString(KEY_NAME_ITEM_ID);
+                switch (resultCode) {
+                    case Activity.RESULT_OK:
+                        if (statusCode == IAP_RESPONSE_RESULT_OK) {
+                            result = new IabResult(IabHelper.BILLING_RESPONSE_RESULT_OK, errorMsg);
+                        } else {
+                            result = new IabResult(IabHelper.BILLING_RESPONSE_RESULT_ERROR, errorMsg);
+                        }
+                        break;
+                    case Activity.RESULT_CANCELED:
+                        result = new IabResult(IabHelper.BILLING_RESPONSE_RESULT_USER_CANCELED, errorMsg);
+                        break;
+                    default:
+                        result = new IabResult(IabHelper.BILLING_RESPONSE_RESULT_ERROR, errorMsg);
+                        break;
+                }
+                purchase.setItemType(mPurchasingItemType);
+                purchase.setSku(itemId);
+
+            } else {
+                result = new IabResult(IabHelper.BILLING_RESPONSE_RESULT_ERROR, "Payment was not processed successfully");
+            }
+        }
+        Log.d(TAG, "Samsung result code: " + result.getResponse() + ", msg: " + result.getMessage());
+        mPurchaseListener.onIabPurchaseFinished(result, purchase);
+        return true;
     }
 
 
     @Override
     public void consume(Purchase itemInfo) throws IabException {
+        // Nothing to do here
     }
 
     @Override
     public void dispose() {
         mContext.unbindService(mServiceConnection);
+        mServiceConnection = null;
+        mIapConnector = null;
     }
 
 
