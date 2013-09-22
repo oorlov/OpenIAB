@@ -335,7 +335,7 @@ public class OpenIabHelper {
                 final AppstoreInAppBillingService billingService = entry.getValue().getInAppBillingService();
                 billingService.startSetup(new OnIabSetupFinishedListener() {
                     public void onIabSetupFinished(IabResult result) {
-                        queryInventoryAsync(new IabHelper.QueryInventoryFinishedListener() {
+                        queryInventoryAsyncInner(false, null, new IabHelper.QueryInventoryFinishedListener() {
                             @Override
                             public void onQueryInventoryFinished(IabResult result, Inventory inv) {
                                 if (!result.isSuccess()) inventoryChecked.countDown();
@@ -517,11 +517,13 @@ public class OpenIabHelper {
         return mAppstoreBillingService.queryInventory(querySkuDetails, moreItemStoreSkus, moreSubsStoreSkus);
     }
 
-    public void queryInventoryAsync(final boolean querySkuDetails,
-                                    final List<String> moreSkus,
-                                    final IabHelper.QueryInventoryFinishedListener listener) {
-        final Handler handler = new Handler();
+    public void queryInventoryAsync(final boolean querySkuDetails, final List<String> moreSkus, final IabHelper.QueryInventoryFinishedListener listener) {
         checkSetupDone("queryInventory");
+        queryInventoryAsyncInner(querySkuDetails, moreSkus, listener);
+    }
+
+    private void queryInventoryAsyncInner(final boolean querySkuDetails, final List<String> moreSkus, final IabHelper.QueryInventoryFinishedListener listener) {
+        final Handler handler = new Handler();
         flagStartAsync("refresh inventory");
         (new Thread(new Runnable() {
             public void run() {
