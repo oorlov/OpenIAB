@@ -121,7 +121,6 @@ public class OpenIabHelper {
             if (skuMap.get(sku) != null) {
                 throw new IllegalArgumentException("Already specified sku: " + sku + ", storeSku: " + skuMap.get(sku));
             }
-            ;
             Map<String, String> storeSkuMap = storeSku2skuMappings.get(storeName);
             if (storeSkuMap == null) {
                 storeSkuMap = new HashMap<String, String>();
@@ -159,7 +158,15 @@ public class OpenIabHelper {
         }
     }
 
-    
+    public static List<String> getAllStoreSkus(final String appstoreName) {
+        Map<String, String> skuMap = sku2storeSkuMappings.get(appstoreName);
+        List<String> result = new ArrayList<String>();
+        if (skuMap != null) {
+            result.addAll(skuMap.values());
+        }
+        return result;
+    }
+
     public interface OnOpenIabHelperInitFinished {
         public void onOpenIabHelperInitFinished();
     }
@@ -181,7 +188,7 @@ public class OpenIabHelper {
         this.mServiceManager = new AppstoreServiceManager(context, storeKeys, prefferedStores, new Appstore[] {
                     new GooglePlay(context, storeKeys.get(OpenIabHelper.NAME_GOOGLE))
                 ,   new AmazonAppstore(context)
-                ,   new SamsungApps(context, storeKeys.get(OpenIabHelper.NAME_SAMSUNG))
+                ,   new SamsungApps(context)
                 ,   new TStore(context, storeKeys.get(OpenIabHelper.NAME_TSTORE))
         });
     }
