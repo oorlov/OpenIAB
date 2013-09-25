@@ -305,7 +305,7 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
                         break;
                 }
                 purchase.setItemType(mPurchasingItemType);
-                purchase.setSku(itemGroupId + '/' + itemId);
+                purchase.setSku(OpenIabHelper.getSku(OpenIabHelper.NAME_SAMSUNG, itemGroupId + '/' + itemId));
 
             } else {
                 result = new IabResult(IabHelper.BILLING_RESPONSE_RESULT_ERROR, "Payment was not processed successfully");
