@@ -50,8 +50,7 @@ public class SamsungApps extends DefaultAppstore {
 
     @Override
     public boolean isPackageInstaller(String packageName) {
-        // TODO: write normal checker
-        return isDebugMode;
+        return isDebugMode || isBillingAvailable(packageName);
     }
 
     /**
