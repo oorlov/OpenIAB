@@ -41,25 +41,24 @@ and handle results in listener and update UI to show what is purchased
 https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/trivialdrive/MainActivity.java#L210
 
 5. When in user requested purchase of item call  ``` mHelper.launchPurchaseFlow() ```
-https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/trivialdrive/MainActivity.java#L276
+https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/trivialdrive/MainActivity.java#L271
 and handle results with listener
-https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/trivialdrive/MainActivity.java#L362
+https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/trivialdrive/MainActivity.java#L357
 
 6. If user purchased consumable item call  ``` mHelper.consume() ```
 to exclude it from inventory. If item not consumed Store suppose it non-consumable item and doesn't allow to purchase it one more time. Also it will be returned by ``` mHelper.queryInventory() ``` next time
-https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/trivialdrive/MainActivity.java#L242
+https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/trivialdrive/MainActivity.java#L237
 and handle results with listener
-https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/trivialdrive/MainActivity.java#L404
+https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/trivialdrive/MainActivity.java#L399
 
 7. Map Google Play SKU ids to Yandex/Amazon SKUs like this:
-https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/trivialdrive/MainActivity.java#L111
+https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/trivialdrive/MainActivity.java#L108
 
 8. Specify keys for different stores like this:
-https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/trivialdrive/MainActivity.java#L176
+https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/trivialdrive/MainActivity.java#L173
 
 9. Add permissions required for OpenIAB in your AndroidManifest.xml
 https://github.com/oorlov/OpenIAB/blob/doc-update/samples/trivialdrive/AndroidManifest.xml#L33
-
 ```xml
 <uses-permission android:name="org.onepf.openiab.permission.BILLING" />
 ```
@@ -75,6 +74,7 @@ And register reciever for Amazon
 </receiver>
 ```
 https://github.com/oorlov/OpenIAB/blob/doc-update/samples/trivialdrive/AndroidManifest.xml#L54
+
 
 How OpenIAB Works
 =====
