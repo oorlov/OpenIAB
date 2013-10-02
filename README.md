@@ -10,7 +10,34 @@ their apps/games in a way that one APK will work in all the stores and automatic
 purchase API under each store. Plus we are going to develop an open in-app billing API that stores 
 could implement to support all the built APK files using this library.
 
-How OpenIAB Will Work
+How To add Open In-App Billing in your app
+=====
+1. Download library from GitHub
+git clone https://github.com/onepf/OpenIAB.git
+2. Link /library to project as Android Library
+3. Instantiate OpenIabHelper  and call mHelper.startSetup() and handle results in listener
+https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/trivialdrive/MainActivity.java#L191
+4. When setup is done call mHelper.queryInventory() 
+https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/trivialdrive/MainActivity.java#L203
+and handle results in listener and update UI to show what is purchased
+https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/trivialdrive/MainActivity.java#L210
+5. When in user requested purchase of item call mHelper.launchPurchaseFlow()
+https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/trivialdrive/MainActivity.java#L276
+and handle results with listener
+https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/trivialdrive/MainActivity.java#L362
+6. If user purchased consumable item call mHelper.consume() to exclude it from inventory. If item not consumed Store suppose it non-consumable item and doesn't allow to purchase it one more time. Also it will be returned by mHelper.queryInventory() next time
+https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/trivialdrive/MainActivity.java#L242
+and handle results with listener
+https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/trivialdrive/MainActivity.java#L404
+7. Map Google Play SKU ids to Yandex/Amazon SKUs like this:
+https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/trivialdrive/MainActivity.java#L111
+8. Specify keys for different stores like this:
+https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/trivialdrive/MainActivity.java#L176
+9. Add permissions required for Yandex.Store:
+org.onepf.openiab.permission.BILLING
+
+
+How OpenIAB Works
 =====
 1. An Android app developer integrates OpenIAB library in his/her Android code 
 2. An Android app developer implements in-app purchases using OpenIAB API (which is very close to Google Play IAB API, just few changes in source code will be needed) 
@@ -24,8 +51,7 @@ How OpenIAB Will Work
 
 Current Status
 =====
-We have just started. We are creating a [sample game](/onepf/OpenIAB/tree/master/samples/life) that supports in-app billing of all existing 
-appstores that support in-app purchasing. In the same time, we are designing 
+We have just started. We are creating a [sample game](/onepf/OpenIAB/tree/master/samples/trivialdrive) that supports in-app billing of all existing appstores that support in-app purchasing. In the same time, we are designing 
 [Open In-App Billing API](http://www.github.com/onepf/OpenIAB/blob/master/specification/openms_spec_1_0.md) that appstores can use to easily integrate in-app billing functionality.
 
 Basic Principles
