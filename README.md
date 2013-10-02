@@ -33,10 +33,8 @@ git clone https://github.com/onepf/OpenIAB.git
 ```
 https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/trivialdrive/MainActivity.java#L186
 
-4. When setup is done call 
-```
-mHelper.queryInventory() 
-```
+4. When setup is done call  ```java mHelper.queryInventory() ```
+
 https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/trivialdrive/MainActivity.java#L203
 and handle results in listener and update UI to show what is purchased
 https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/trivialdrive/MainActivity.java#L210
@@ -53,11 +51,7 @@ https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/
 ```
 mHelper.consume()
 ``` 
-to exclude it from inventory. If item not consumed Store suppose it non-consumable item and doesn't allow to purchase it one more time. Also it will be returned by 
-```
-mHelper.queryInventory()
-```
-next time
+to exclude it from inventory. If item not consumed Store suppose it non-consumable item and doesn't allow to purchase it one more time. Also it will be returned by <pre>mHelper.queryInventory()</pre> next time
 https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/trivialdrive/MainActivity.java#L242
 and handle results with listener
 https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/trivialdrive/MainActivity.java#L404
@@ -69,8 +63,8 @@ https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/
 https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/trivialdrive/MainActivity.java#L176
 
 9. Add permissions required for Yandex.Store:
-```
-org.onepf.openiab.permission.BILLING
+```xml
+<uses-permission android:name="org.onepf.openiab.permission.BILLING" />
 ```
 
 
