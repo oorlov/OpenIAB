@@ -58,8 +58,13 @@ public class SamsungApps extends DefaultAppstore {
      */
     @Override
     public boolean isBillingAvailable(String packageName) {
-        Intent serviceIntent = new Intent(IAP_SERVICE_NAME);
-        boolean iapInstalled = !mContext.getPackageManager().queryIntentServices(serviceIntent, 0).isEmpty();
+        boolean iapInstalled = true;
+        try {
+            PackageManager pm = mContext.getPackageManager();
+            pm.getApplicationInfo(IAP_PACKAGE_NAME, PackageManager.GET_META_DATA);
+        } catch (PackageManager.NameNotFoundException e) {
+            iapInstalled = false;
+        }
         if (iapInstalled) {
             try {
                 Signature[] signatures = mContext.getPackageManager().getPackageInfo(IAP_PACKAGE_NAME, PackageManager.GET_SIGNATURES).signatures;
