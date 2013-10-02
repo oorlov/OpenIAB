@@ -33,26 +33,31 @@ git clone https://github.com/onepf/OpenIAB.git
               mHelper.queryInventoryAsync(mGotInventoryListener);
           }
   });
-
 ```
-
-https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/trivialdrive/MainActivity.java#L191
-4. When setup is done call mHelper.queryInventory() 
+4. When setup is done call 
+```
+mHelper.queryInventory() 
+```
 https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/trivialdrive/MainActivity.java#L203
 and handle results in listener and update UI to show what is purchased
 https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/trivialdrive/MainActivity.java#L210
+
 5. When in user requested purchase of item call mHelper.launchPurchaseFlow()
 https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/trivialdrive/MainActivity.java#L276
 and handle results with listener
 https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/trivialdrive/MainActivity.java#L362
+
 6. If user purchased consumable item call mHelper.consume() to exclude it from inventory. If item not consumed Store suppose it non-consumable item and doesn't allow to purchase it one more time. Also it will be returned by mHelper.queryInventory() next time
 https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/trivialdrive/MainActivity.java#L242
 and handle results with listener
 https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/trivialdrive/MainActivity.java#L404
+
 7. Map Google Play SKU ids to Yandex/Amazon SKUs like this:
 https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/trivialdrive/MainActivity.java#L111
+
 8. Specify keys for different stores like this:
 https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/trivialdrive/MainActivity.java#L176
+
 9. Add permissions required for Yandex.Store:
 org.onepf.openiab.permission.BILLING
 
