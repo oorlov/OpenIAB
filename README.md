@@ -13,9 +13,29 @@ could implement to support all the built APK files using this library.
 How To add Open In-App Billing in your app
 =====
 1. Download library from GitHub
+```
 git clone https://github.com/onepf/OpenIAB.git
+```
 2. Link /library to project as Android Library
 3. Instantiate OpenIabHelper  and call mHelper.startSetup() and handle results in listener
+```java
+  Map<String, String> storeKeys = new HashMap<String, String>();
+  storeKeys.put(OpenIabHelper.NAME_GOOGLE, base64EncodedPublicKey);
+
+  mHelper = new OpenIabHelper(this, storeKeys);
+  mHelper.startSetup(new IabHelper.OnIabSetupFinishedListener() {
+      public void onIabSetupFinished(IabResult result) {
+          if (!result.isSuccess()) {
+              complain("Problem setting up in-app billing: " + result);
+              return;
+          }
+          Log.d(TAG, "Setup successful. Querying inventory.");
+              mHelper.queryInventoryAsync(mGotInventoryListener);
+          }
+  });
+
+```
+
 https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/trivialdrive/MainActivity.java#L191
 4. When setup is done call mHelper.queryInventory() 
 https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/trivialdrive/MainActivity.java#L203
