@@ -46,7 +46,7 @@ and handle results with listener
 https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/trivialdrive/MainActivity.java#L362
 
 6. If user purchased consumable item call  ``` mHelper.consume() ```
-to exclude it from inventory. If item not consumed Store suppose it non-consumable item and doesn't allow to purchase it one more time. Also it will be returned by <pre>mHelper.queryInventory()</pre> next time
+to exclude it from inventory. If item not consumed Store suppose it non-consumable item and doesn't allow to purchase it one more time. Also it will be returned by ``` mHelper.queryInventory() ``` next time
 https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/trivialdrive/MainActivity.java#L242
 and handle results with listener
 https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/trivialdrive/MainActivity.java#L404
@@ -58,19 +58,20 @@ https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/
 https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/trivialdrive/MainActivity.java#L176
 
 9. Add permissions required for OpenIAB in your AndroidManifest.xml
+https://github.com/oorlov/OpenIAB/blob/doc-update/samples/trivialdrive/AndroidManifest.xml#L33
+
 ```xml
 <uses-permission android:name="org.onepf.openiab.permission.BILLING" />
 ```
-https://github.com/oorlov/OpenIAB/blob/doc-update/samples/trivialdrive/AndroidManifest.xml#L33
 And register reciever for Amazon
 ```xml
 <receiver android:name="com.amazon.inapp.purchasing.ResponseReceiver">
-  <intent-filter>
-    <action
-      android:name="com.amazon.inapp.purchasing.NOTIFY"
-      android:permission="com.amazon.inapp.purchasing.Permission.NOTIFY"
-    />
-  </intent-filter>
+    <intent-filter>
+        <action
+            android:name="com.amazon.inapp.purchasing.NOTIFY"
+            android:permission="com.amazon.inapp.purchasing.Permission.NOTIFY"
+        />
+    </intent-filter>
 </receiver>
 ```
 https://github.com/oorlov/OpenIAB/blob/doc-update/samples/trivialdrive/AndroidManifest.xml#L54
