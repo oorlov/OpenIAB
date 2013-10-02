@@ -19,7 +19,8 @@ git clone https://github.com/onepf/OpenIAB.git
 
 2. Link /library to project as Android Library
 
-3. Instantiate OpenIabHelper  and call mHelper.startSetup() and handle results in listener
+3. Instantiate ``` new OpenIabHelper ```  and call ``` mHelper.startSetup() ```. 
+When setup is done call  ``` mHelper.queryInventory() ```
 ```java
   mHelper = new OpenIabHelper(this, storeKeys);
   mHelper.startSetup(new IabHelper.OnIabSetupFinishedListener() {
@@ -35,9 +36,7 @@ git clone https://github.com/onepf/OpenIAB.git
 ```
 https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/trivialdrive/MainActivity.java#L186
 
-4. When setup is done call  ``` mHelper.queryInventory() ```
-https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/trivialdrive/MainActivity.java#L203
-and handle results in listener and update UI to show what is purchased
+4. Handle results of ``` mHelper.queryInventory() ``` in listener and update UI to show what is purchased
 https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/trivialdrive/MainActivity.java#L210
 
 5. When in user requested purchase of item call  ``` mHelper.launchPurchaseFlow() ```
