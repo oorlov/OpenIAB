@@ -91,18 +91,25 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
     public static final String ITEM_TYPE_NON_CONSUMABLE = "01";
     public static final String ITEM_TYPE_SUBSCRIPTION = "02";
     public static final String ITEM_TYPE_ALL = "10";
+
+    // ========================================================================
+    // define request code for IAPService.
+    // ========================================================================
+    public static final int REQUEST_CODE_IS_IAP_PAYMENT            = 1;
+    public static final int REQUEST_CODE_IS_ACCOUNT_CERTIFICATION  = 2;
+
     // ========================================================================
     // define status code passed to 3rd party application
     // ========================================================================
-    final public static int IAP_ERROR_NONE = 0;
-    final public static int IAP_PAYMENT_IS_CANCELED = 1;
-    final public static int IAP_ERROR_INITIALIZATION = -1000;
-    final public static int IAP_ERROR_NEED_APP_UPGRADE = -1001;
-    final public static int IAP_ERROR_COMMON = -1002;
-    final public static int IAP_ERROR_ALREADY_PURCHASED = -1003;
-    final public static int IAP_ERROR_WHILE_RUNNING = -1004;
-    final public static int IAP_ERROR_PRODUCT_DOES_NOT_EXIST = -1005;
-    final public static int IAP_ERROR_CONFIRM_INBOX = -1006;
+    public static final int IAP_ERROR_NONE = 0;
+    public static final int IAP_PAYMENT_IS_CANCELED = 1;
+    public static final int IAP_ERROR_INITIALIZATION = -1000;
+    public static final int IAP_ERROR_NEED_APP_UPGRADE = -1001;
+    public static final int IAP_ERROR_COMMON = -1002;
+    public static final int IAP_ERROR_ALREADY_PURCHASED = -1003;
+    public static final int IAP_ERROR_WHILE_RUNNING = -1004;
+    public static final int IAP_ERROR_PRODUCT_DOES_NOT_EXIST = -1005;
+    public static final int IAP_ERROR_CONFIRM_INBOX = -1006;
     // ========================================================================
 
     public boolean mIsBind = false;
@@ -111,7 +118,7 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
     private ServiceConnection mServiceConnection;
     private String mPurchasingItemType;
 
-    private OnIabSetupFinishedListener setupListener = null;
+    private OnIabSetupFinishedListener mSetupListener = null;
     // The listener registered on launchPurchaseFlow, which we have to call back when
     // the purchase finishes
     private OnIabPurchaseFinishedListener mPurchaseListener = null;
@@ -123,42 +130,12 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
 
     @Override
     public void startSetup(final OnIabSetupFinishedListener listener) {
-        mServiceConnection = new ServiceConnection() {
-            @Override
-            public void onServiceConnected(ComponentName name, IBinder service) {
-                mIapConnector = IAPConnector.Stub.asInterface(service);
-                try {
-                    Bundle result = mIapConnector.init(IAP_MODE_COMMERCIAL);
-                    if (result != null) {
-                        int statusCode = result.getInt(KEY_NAME_STATUS_CODE);
-                        Log.d(TAG, "status code: " + statusCode);
-                        String errorString = result.getString(KEY_NAME_ERROR_STRING);
-                        if (statusCode == IAP_ERROR_NONE) {
-                            listener.onIabSetupFinished(new IabResult(IabHelper.BILLING_RESPONSE_RESULT_OK, "Setup successful"));
-                        } else if (statusCode == IAP_ERROR_NEED_APP_UPGRADE) {
-                            listener.onIabSetupFinished(new IabResult(IabHelper.BILLING_RESPONSE_RESULT_BILLING_UNAVAILABLE, "Samsung IAP package must be upgraded"));
-                        } else {
-                            listener.onIabSetupFinished(new IabResult(IabHelper.BILLING_RESPONSE_RESULT_ERROR, "Error: " + errorString));
-                        }
-                    } else {
-                        listener.onIabSetupFinished(new IabResult(IabHelper.BILLING_RESPONSE_RESULT_ERROR, "Problem while initiate service"));
-                    }
-                } catch (RemoteException e) {
-                    listener.onIabSetupFinished(new IabResult(IabHelper.BILLING_RESPONSE_RESULT_ERROR, "Can't init service"));
-                }
-            }
-            @Override
-            public void onServiceDisconnected(ComponentName name) {
-                mIapConnector = null;
-                mServiceConnection = null;
-            }
-        };
-        Intent serviceIntent = new Intent(IAP_SERVICE_NAME);
-        mContext.bindService(serviceIntent, mServiceConnection, Context.BIND_AUTO_CREATE);
-//        ComponentName com = new ComponentName(SamsungApps.IAP_PACKAGE_NAME, ACCOUNT_ACTIVITY_NAME);
-//        Intent intent = new Intent();
-//        intent.setComponent(com);
-//        ((Activity)mContext).startActivityForResult(intent, 1002);
+        mSetupListener = listener;
+
+        ComponentName com = new ComponentName(SamsungApps.IAP_PACKAGE_NAME, ACCOUNT_ACTIVITY_NAME);
+        Intent intent = new Intent();
+        intent.setComponent(com);
+        ((Activity)mContext).startActivityForResult(intent, REQUEST_CODE_IS_ACCOUNT_CERTIFICATION);
     }
     
     @Override
@@ -277,6 +254,18 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
 
     @Override
     public boolean handleActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == REQUEST_CODE_IS_ACCOUNT_CERTIFICATION) {
+            if (resultCode == Activity.RESULT_OK) {
+                bindIapService();
+            } else if (resultCode == Activity.RESULT_CANCELED) {
+                mSetupListener.onIabSetupFinished(new IabResult(IabHelper.BILLING_RESPONSE_RESULT_USER_CANCELED,
+                        "Account certification canceled"));
+            } else {
+                mSetupListener.onIabSetupFinished(new IabResult(IabHelper.BILLING_RESPONSE_RESULT_ERROR,
+                        "Unknown error. Result code: " + resultCode));
+            }
+            return true;
+        }
         if (requestCode != mRequestCode) {
             return false;
         }
@@ -324,7 +313,9 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
 
     @Override
     public void dispose() {
-        mContext.unbindService(mServiceConnection);
+        if (mContext != null && mServiceConnection != null) {
+            mContext.unbindService(mServiceConnection);
+        }
         mServiceConnection = null;
         mIapConnector = null;
     }
@@ -343,5 +334,47 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
             throw new IllegalStateException("Samsung SKU must contain ITEM_GROUP_ID and ITEM_ID");
         }
         return skuParts[1];
+    }
+
+    private void bindIapService() {
+        mServiceConnection = new ServiceConnection() {
+            @Override
+            public void onServiceConnected(ComponentName name, IBinder service) {
+                mIapConnector = IAPConnector.Stub.asInterface(service);
+                if (mIapConnector != null) {
+                    initIap();
+                } else {
+                    mSetupListener.onIabSetupFinished(new IabResult(IabHelper.BILLING_RESPONSE_RESULT_ERROR,
+                            "IAP service bind failed"));
+                }
+            }
+            @Override
+            public void onServiceDisconnected(ComponentName name) {
+                mIapConnector = null;
+                mServiceConnection = null;
+            }
+        };
+        Intent serviceIntent = new Intent(IAP_SERVICE_NAME);
+        mContext.bindService(serviceIntent, mServiceConnection, Context.BIND_AUTO_CREATE);
+    }
+
+
+    private void initIap() {
+        int errorCode = IabHelper.BILLING_RESPONSE_RESULT_ERROR;
+        String errorMsg = "Init IAP service failed";
+        try {
+            Bundle result = mIapConnector.init(IAP_MODE_COMMERCIAL);
+            if (result != null) {
+                int statusCode = result.getInt(KEY_NAME_STATUS_CODE);
+                Log.d(TAG, "status code: " + statusCode);
+                errorMsg = result.getString(KEY_NAME_ERROR_STRING);
+                if (statusCode == IAP_ERROR_NONE) {
+                    errorCode = IabHelper.BILLING_RESPONSE_RESULT_OK;
+                }
+            }
+        } catch (RemoteException e) {
+            Log.d(TAG, "Init IAP: " + e.getMessage());
+        }
+        mSetupListener.onIabSetupFinished(new IabResult(errorCode, errorMsg));
     }
 }
