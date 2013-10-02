@@ -57,7 +57,6 @@ https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/
 https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/trivialdrive/MainActivity.java#L173
 
 9. Add permissions required for OpenIAB in your AndroidManifest.xml
-https://github.com/oorlov/OpenIAB/blob/doc-update/samples/trivialdrive/AndroidManifest.xml#L33
 ```xml
 <uses-permission android:name="org.onepf.openiab.permission.BILLING" />
 ```
@@ -72,7 +71,7 @@ And register reciever for Amazon
     </intent-filter>
 </receiver>
 ```
-https://github.com/oorlov/OpenIAB/blob/doc-update/samples/trivialdrive/AndroidManifest.xml#L54
+https://github.com/oorlov/OpenIAB/blob/doc-update/samples/trivialdrive/AndroidManifest.xml#L33
 
 
 How OpenIAB Works
