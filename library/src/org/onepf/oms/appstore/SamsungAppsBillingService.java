@@ -123,6 +123,7 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
     // the purchase finishes
     private OnIabPurchaseFinishedListener mPurchaseListener = null;
     private int mRequestCode;
+    private String mItemGroupId;
 
     public SamsungAppsBillingService(Context context) {
         mContext = context;
@@ -248,6 +249,7 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
         mRequestCode = requestCode;
         mPurchaseListener = listener;
         mPurchasingItemType = itemType;
+        mItemGroupId = itemGroupId;
         Log.d(TAG, "Request code: " + requestCode);
         activity.startActivityForResult(intent, requestCode);
     }
@@ -277,7 +279,6 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
             if (extras != null) {
                 int statusCode = extras.getInt(KEY_NAME_STATUS_CODE);
                 errorMsg = extras.getString(KEY_NAME_ERROR_STRING);
-                String itemGroupId = extras.getString(KEY_NAME_ITEM_GROUP_ID);
                 String itemId = extras.getString(KEY_NAME_ITEM_ID);
                 switch (resultCode) {
                     case Activity.RESULT_OK:
@@ -298,7 +299,7 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
                         break;
                 }
                 purchase.setItemType(mPurchasingItemType);
-                purchase.setSku(OpenIabHelper.getSku(OpenIabHelper.NAME_SAMSUNG, itemGroupId + '/' + itemId));
+                purchase.setSku(OpenIabHelper.getSku(OpenIabHelper.NAME_SAMSUNG, mItemGroupId + '/' + itemId));
             }
         }
         Log.d(TAG, "Samsung result code: " + errorCode + ", msg: " + errorMsg);
@@ -364,7 +365,7 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
         int errorCode = IabHelper.BILLING_RESPONSE_RESULT_ERROR;
         String errorMsg = "Init IAP service failed";
         try {
-            Bundle result = mIapConnector.init(IAP_MODE_TEST_FAIL);
+            Bundle result = mIapConnector.init(IAP_MODE_COMMERCIAL);
             if (result != null) {
                 int statusCode = result.getInt(KEY_NAME_STATUS_CODE);
                 Log.d(TAG, "Init IAP connection status code: " + statusCode);
