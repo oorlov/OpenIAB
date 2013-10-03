@@ -269,39 +269,40 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
         if (requestCode != mRequestCode) {
             return false;
         }
-        IabResult result = new IabResult(IabHelper.BILLING_RESPONSE_RESULT_ERROR, "Unknown error");
+        int errorCode = IabHelper.BILLING_RESPONSE_RESULT_ERROR;
+        String errorMsg = "Unknown error";
         Purchase purchase = new Purchase(OpenIabHelper.NAME_SAMSUNG);
         if (data != null) {
             Bundle extras = data.getExtras();
             if (extras != null) {
                 int statusCode = extras.getInt(KEY_NAME_STATUS_CODE);
-                String errorMsg = extras.getString(KEY_NAME_ERROR_STRING);
+                errorMsg = extras.getString(KEY_NAME_ERROR_STRING);
                 String itemGroupId = extras.getString(KEY_NAME_ITEM_GROUP_ID);
                 String itemId = extras.getString(KEY_NAME_ITEM_ID);
                 switch (resultCode) {
                     case Activity.RESULT_OK:
-                        if (statusCode == IAP_RESPONSE_RESULT_OK) {
-                            result = new IabResult(IabHelper.BILLING_RESPONSE_RESULT_OK, errorMsg);
-                        } else {
-                            result = new IabResult(IabHelper.BILLING_RESPONSE_RESULT_ERROR, errorMsg);
+                        switch (statusCode) {
+                            case IAP_ERROR_NONE:
+                                errorCode = IabHelper.BILLING_RESPONSE_RESULT_OK;
+                                break;
+                            case IAP_ERROR_ALREADY_PURCHASED:
+                                errorCode = IabHelper.BILLING_RESPONSE_RESULT_ITEM_ALREADY_OWNED;
+                                break;
+                            case IAP_ERROR_PRODUCT_DOES_NOT_EXIST:
+                                errorCode = IabHelper.BILLING_RESPONSE_RESULT_ITEM_UNAVAILABLE;
+                                break;
                         }
                         break;
                     case Activity.RESULT_CANCELED:
-                        result = new IabResult(IabHelper.BILLING_RESPONSE_RESULT_USER_CANCELED, errorMsg);
-                        break;
-                    default:
-                        result = new IabResult(IabHelper.BILLING_RESPONSE_RESULT_ERROR, errorMsg);
+                        errorCode = IabHelper.BILLING_RESPONSE_RESULT_USER_CANCELED;
                         break;
                 }
                 purchase.setItemType(mPurchasingItemType);
                 purchase.setSku(OpenIabHelper.getSku(OpenIabHelper.NAME_SAMSUNG, itemGroupId + '/' + itemId));
-
-            } else {
-                result = new IabResult(IabHelper.BILLING_RESPONSE_RESULT_ERROR, "Payment was not processed successfully");
             }
         }
-        Log.d(TAG, "Samsung result code: " + result.getResponse() + ", msg: " + result.getMessage());
-        mPurchaseListener.onIabPurchaseFinished(result, purchase);
+        Log.d(TAG, "Samsung result code: " + errorCode + ", msg: " + errorMsg);
+        mPurchaseListener.onIabPurchaseFinished(new IabResult(errorCode, errorMsg), purchase);
         return true;
     }
 
@@ -363,21 +364,13 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
         int errorCode = IabHelper.BILLING_RESPONSE_RESULT_ERROR;
         String errorMsg = "Init IAP service failed";
         try {
-            Bundle result = mIapConnector.init(IAP_MODE_COMMERCIAL);
+            Bundle result = mIapConnector.init(IAP_MODE_TEST_FAIL);
             if (result != null) {
                 int statusCode = result.getInt(KEY_NAME_STATUS_CODE);
                 Log.d(TAG, "Init IAP connection status code: " + statusCode);
                 errorMsg = result.getString(KEY_NAME_ERROR_STRING);
-                switch (statusCode) {
-                    case IAP_ERROR_NONE:
-                        errorCode = IabHelper.BILLING_RESPONSE_RESULT_OK;
-                        break;
-                    case IAP_ERROR_ALREADY_PURCHASED:
-                        errorCode = IabHelper.BILLING_RESPONSE_RESULT_ITEM_ALREADY_OWNED;
-                        break;
-                    case IAP_ERROR_PRODUCT_DOES_NOT_EXIST:
-                        errorCode = IabHelper.BILLING_RESPONSE_RESULT_ITEM_UNAVAILABLE;
-                        break;
+                if (statusCode == IAP_ERROR_NONE) {
+                    errorCode = IabHelper.BILLING_RESPONSE_RESULT_OK;
                 }
             }
         } catch (RemoteException e) {
