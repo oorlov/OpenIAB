@@ -239,7 +239,7 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
         bundle.putString(KEY_NAME_THIRD_PARTY_NAME, activity.getPackageName());
         bundle.putString(KEY_NAME_ITEM_GROUP_ID, itemGroupId);
         bundle.putString(KEY_NAME_ITEM_ID, itemId);
-        
+        Log.d(TAG, "launchPurchase: itemGroupId = " + itemGroupId + ", itemId = " + itemId);
         ComponentName cmpName = new ComponentName(SamsungApps.IAP_PACKAGE_NAME, PAYMENT_ACTIVITY_NAME);
         Intent intent = new Intent(Intent.ACTION_MAIN);
         intent.addCategory(Intent.CATEGORY_LAUNCHER);
@@ -366,10 +366,18 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
             Bundle result = mIapConnector.init(IAP_MODE_COMMERCIAL);
             if (result != null) {
                 int statusCode = result.getInt(KEY_NAME_STATUS_CODE);
-                Log.d(TAG, "status code: " + statusCode);
+                Log.d(TAG, "Init IAP connection status code: " + statusCode);
                 errorMsg = result.getString(KEY_NAME_ERROR_STRING);
-                if (statusCode == IAP_ERROR_NONE) {
-                    errorCode = IabHelper.BILLING_RESPONSE_RESULT_OK;
+                switch (statusCode) {
+                    case IAP_ERROR_NONE:
+                        errorCode = IabHelper.BILLING_RESPONSE_RESULT_OK;
+                        break;
+                    case IAP_ERROR_ALREADY_PURCHASED:
+                        errorCode = IabHelper.BILLING_RESPONSE_RESULT_ITEM_ALREADY_OWNED;
+                        break;
+                    case IAP_ERROR_PRODUCT_DOES_NOT_EXIST:
+                        errorCode = IabHelper.BILLING_RESPONSE_RESULT_ITEM_UNAVAILABLE;
+                        break;
                 }
             }
         } catch (RemoteException e) {
