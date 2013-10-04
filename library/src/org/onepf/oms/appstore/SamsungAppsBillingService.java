@@ -170,6 +170,10 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
                         JSONObject item = new JSONObject(itemString);
                         String itemId = item.getString(JSON_KEY_ITEM_ID);
                         String rawType = item.getString(JSON_KEY_TYPE);
+                        // Do not add consumable item into inventory
+                        if (rawType.equals(ITEM_TYPE_CONSUMABLE)) {
+                            continue;
+                        }
                         String itemType = rawType.equals(ITEM_TYPE_SUBSCRIPTION) ? IabHelper.ITEM_TYPE_SUBS : IabHelper.ITEM_TYPE_INAPP;
 
                         Purchase purchase = new Purchase(OpenIabHelper.NAME_SAMSUNG);
