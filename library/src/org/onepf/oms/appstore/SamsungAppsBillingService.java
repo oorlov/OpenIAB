@@ -40,6 +40,9 @@ import android.os.RemoteException;
 import com.sec.android.iap.IAPConnector;
 
 public class SamsungAppsBillingService implements AppstoreInAppBillingService {
+    private static final int ITEM_RESPONSE_COUNT = 100;
+    private final int CURRENT_MODE = IAP_MODE_COMMERCIAL;
+
     private static final String TAG = SamsungAppsBillingService.class.getSimpleName();
 
     private static final int HONEYCOMB_MR1 = 12;
@@ -156,35 +159,20 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
 
         /* Query getItemsInbox for each itemGroupId */
         for (String itemGroupId : itemGroupIds) {
-            Bundle itemInbox = null;
-            try {
-                // TODO: change endNum to request all items
-                itemInbox = mIapConnector.getItemsInbox(mContext.getPackageName(), itemGroupId, 1, 100, "20000101", today);
-            } catch (RemoteException e) {
-                Log.e(TAG, "Samsung getItemsInbox: " + e.getMessage());
-            }
-            if (itemInbox != null && itemInbox.getInt(KEY_NAME_STATUS_CODE) == IAP_ERROR_NONE) {
-                ArrayList<String> items = itemInbox.getStringArrayList(KEY_NAME_RESULT_LIST);
-                for (String itemString : items) {
-                    try {
-                        JSONObject item = new JSONObject(itemString);
-                        String itemId = item.getString(JSON_KEY_ITEM_ID);
-                        String rawType = item.getString(JSON_KEY_TYPE);
-                        // Do not add consumable item into inventory
-                        if (rawType.equals(ITEM_TYPE_CONSUMABLE)) {
-                            continue;
-                        }
-                        String itemType = rawType.equals(ITEM_TYPE_SUBSCRIPTION) ? IabHelper.ITEM_TYPE_SUBS : IabHelper.ITEM_TYPE_INAPP;
-
-                        Purchase purchase = new Purchase(OpenIabHelper.NAME_SAMSUNG);
-                        purchase.setItemType(itemType);
-                        purchase.setSku(OpenIabHelper.getSku(OpenIabHelper.NAME_SAMSUNG, itemGroupId + '/' + itemId));
-                        inventory.addPurchase(purchase);
-                    } catch (JSONException e) {
-                        Log.e(TAG, "JSON parse error: " + e.getMessage());
-                    }
+            int startNum = 1;
+            int endNum = ITEM_RESPONSE_COUNT;
+            Bundle itemInbox;
+            do {
+                itemInbox = null;
+                try {
+                    Log.d(TAG, "getItemsInbox, startNum = " + startNum + ", endNum = " + endNum);
+                    itemInbox = mIapConnector.getItemsInbox(mContext.getPackageName(), itemGroupId, startNum, endNum, "19700101", today);
+                } catch (RemoteException e) {
+                    Log.e(TAG, "Samsung getItemsInbox: " + e.getMessage());
                 }
-            }
+                startNum += ITEM_RESPONSE_COUNT;
+                endNum += ITEM_RESPONSE_COUNT;
+            } while (processItemsBundle(itemInbox, itemGroupId, inventory, false, null));
         }
         if (querySkuDetails) {
             Set<String> queryItemGroupIds = new HashSet<String>();
@@ -201,34 +189,15 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
                     queryItemIds.add(getItemId(sku));
                 }
             }
-            if (queryItemIds.size() > 0) {
+            if (queryItemIds.isEmpty()) {
                 for (String itemGroupId : queryItemGroupIds) {
                     Bundle itemList = null;
                     try {
-                        itemList = mIapConnector.getItemList(IAP_MODE_COMMERCIAL, mContext.getPackageName(), itemGroupId, 1, 100, ITEM_TYPE_ALL);
+                        itemList = mIapConnector.getItemList(CURRENT_MODE, mContext.getPackageName(), itemGroupId, 1, 100, ITEM_TYPE_ALL);
                     } catch (RemoteException e) {
                         Log.e(TAG, "Samsung getItemList: " + e.getMessage());
                     }
-                    if (itemList != null && itemList.getInt(KEY_NAME_STATUS_CODE) == 0) {
-                        ArrayList<String> items = itemList.getStringArrayList(KEY_NAME_RESULT_LIST);
-                        for (String itemString : items) {
-                            try {
-                                JSONObject item = new JSONObject(itemString);
-                                String itemId = item.getString(JSON_KEY_ITEM_ID);
-                                if (queryItemIds.contains(itemId)) {
-                                    String rawType = item.getString(JSON_KEY_TYPE);
-                                    String itemType = rawType.equals(ITEM_TYPE_SUBSCRIPTION) ? IabHelper.ITEM_TYPE_SUBS : IabHelper.ITEM_TYPE_INAPP;
-
-                                    Purchase purchase = new Purchase(OpenIabHelper.NAME_SAMSUNG);
-                                    purchase.setItemType(itemType);
-                                    purchase.setSku(OpenIabHelper.getSku(OpenIabHelper.NAME_SAMSUNG, itemGroupId + '/' + itemId));
-                                    inventory.addPurchase(purchase);
-                                }
-                            } catch (JSONException e) {
-                                Log.e(TAG, "JSON parse error: " + e.getMessage());
-                            }
-                        }
-                    }
+                    processItemsBundle(itemList, itemGroupId, inventory, true, queryItemIds);
                 }
             }
         }
@@ -369,7 +338,7 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
         int errorCode = IabHelper.BILLING_RESPONSE_RESULT_ERROR;
         String errorMsg = "Init IAP service failed";
         try {
-            Bundle result = mIapConnector.init(IAP_MODE_COMMERCIAL);
+            Bundle result = mIapConnector.init(CURRENT_MODE);
             if (result != null) {
                 int statusCode = result.getInt(KEY_NAME_STATUS_CODE);
                 Log.d(TAG, "Init IAP connection status code: " + statusCode);
@@ -382,5 +351,34 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
             Log.d(TAG, "Init IAP: " + e.getMessage());
         }
         mSetupListener.onIabSetupFinished(new IabResult(errorCode, errorMsg));
+    }
+
+    private boolean processItemsBundle(Bundle itemsBundle, String itemGroupId, Inventory inventory, boolean addConsumable, Set<String> queryItemIds) {
+        if (itemsBundle == null || itemsBundle.getInt(KEY_NAME_STATUS_CODE) != IAP_ERROR_NONE) {
+            return false;
+        }
+        ArrayList<String> items = itemsBundle.getStringArrayList(KEY_NAME_RESULT_LIST);
+        for (String itemString : items) {
+            try {
+                JSONObject item = new JSONObject(itemString);
+                String itemId = item.getString(JSON_KEY_ITEM_ID);
+                if (queryItemIds == null || queryItemIds.contains(itemId)) {
+                    String rawType = item.getString(JSON_KEY_TYPE);
+                    // Do not add consumable item into inventory
+                    if (rawType.equals(ITEM_TYPE_CONSUMABLE) && !addConsumable) {
+                        continue;
+                    }
+                    String itemType = rawType.equals(ITEM_TYPE_SUBSCRIPTION) ? IabHelper.ITEM_TYPE_SUBS : IabHelper.ITEM_TYPE_INAPP;
+
+                    Purchase purchase = new Purchase(OpenIabHelper.NAME_SAMSUNG);
+                    purchase.setItemType(itemType);
+                    purchase.setSku(OpenIabHelper.getSku(OpenIabHelper.NAME_SAMSUNG, itemGroupId + '/' + itemId));
+                    inventory.addPurchase(purchase);
+                }
+            } catch (JSONException e) {
+                Log.e(TAG, "JSON parse error: " + e.getMessage());
+            }
+        }
+        return items.size() == ITEM_RESPONSE_COUNT;
     }
 }
