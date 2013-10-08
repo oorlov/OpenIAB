@@ -189,7 +189,7 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
                     queryItemIds.add(getItemId(sku));
                 }
             }
-            if (queryItemIds.isEmpty()) {
+            if (!queryItemIds.isEmpty()) {
                 for (String itemGroupId : queryItemGroupIds) {
                     Bundle itemList = null;
                     try {
