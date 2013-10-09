@@ -16,15 +16,14 @@
 
 package org.onepf.oms.appstore;
 
-import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.content.pm.Signature;
 import org.onepf.oms.Appstore;
 import org.onepf.oms.AppstoreInAppBillingService;
 import org.onepf.oms.DefaultAppstore;
 import org.onepf.oms.OpenIabHelper;
 
 import android.content.Context;
+import android.content.pm.PackageManager;
+import android.content.pm.Signature;
 
 /**
  * User: Boris Minaev
@@ -42,7 +41,7 @@ public class SamsungApps extends DefaultAppstore {
     private Context mContext;
 
     // isDebugMode = true -> always returns Samsung Apps is installer
-    private final boolean isDebugMode = false;
+    static final boolean isDebugMode = true;
 
     public SamsungApps(Context context) {
         mContext = context;
