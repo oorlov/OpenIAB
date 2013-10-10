@@ -18,6 +18,7 @@ package org.onepf.oms;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -152,7 +153,7 @@ public class OpenIabHelper {
                 sku2storeSkuMappings.put(storeName, skuMap);
             }
             if (skuMap.get(sku) != null) {
-                throw new IllegalArgumentException("Already specified sku: " + sku + ", storeSku: " + skuMap.get(sku));
+                throw new IllegalArgumentException("Already specified SKU. sku: " + sku + " -> storeSku: " + skuMap.get(sku));
             }
             ;
             Map<String, String> storeSkuMap = storeSku2skuMappings.get(storeName);
@@ -161,7 +162,7 @@ public class OpenIabHelper {
                 storeSku2skuMappings.put(storeName, storeSkuMap);
             }
             if (storeSkuMap.get(storeSku) != null) {
-                throw new IllegalArgumentException("Already specified storeSku: " + storeSku + ", sku: " + storeSkuMap.get(storeSku));
+                throw new IllegalArgumentException("Ambigous SKU mapping. You try to map sku: " + sku + " -> storeSku: " + storeSku + ", that is already mapped to sku: " + storeSkuMap.get(storeSku));
             }
             skuMap.put(sku, storeSku);
             storeSkuMap.put(storeSku, sku);
@@ -314,31 +315,32 @@ public class OpenIabHelper {
             String packageName = context.getPackageName();
             // candidates:
             Map<String, Appstore> candidates = new HashMap<String, Appstore>();
-            final ArrayList<Appstore> equippedStores = new ArrayList<Appstore>();
+            final List<Appstore> equippedStores = Collections.synchronizedList(new ArrayList<Appstore>());
             for (Appstore appstore : availableStores) {
                 if (appstore.isBillingAvailable(packageName)) {
                     candidates.put(appstore.getAppstoreName(), appstore);
                 }
             }
-            final CountDownLatch inventoryRemains = new CountDownLatch(candidates.size()); 
+            final CountDownLatch inventoryRemains = new CountDownLatch(candidates.size());
+            // for every appstore: connect to billing service and check inventory 
             for (Map.Entry<String, Appstore> entry : candidates.entrySet()) {
                 final Appstore appstore = entry.getValue();
                 final AppstoreInAppBillingService billingService = entry.getValue().getInAppBillingService();
                 billingService.startSetup(new OnIabSetupFinishedListener() {
                     public void onIabSetupFinished(IabResult result) {
-                        queryInventoryAsyncInner(false, null, new IabHelper.QueryInventoryFinishedListener() {
-                            @Override
-                            public void onQueryInventoryFinished(IabResult result, Inventory inv) {
-                                if (!result.isSuccess()) {
-                                    Log.e(TAG, "inventoryCheck failed ");
-                                } else if (inv.getAllPurchases().size() > 0) {
-                                    synchronized (equippedStores) {
+                        new Thread(new Runnable() {
+                            public void run() {
+                                try {
+                                    Inventory inventory = billingService.queryInventory(false, null, null);
+                                    if (inventory.getAllPurchases().size() > 0) {
                                         equippedStores.add(appstore);
                                     }
+                                } catch (IabException e) {
+                                    Log.e(TAG, "inventoryCheck() failed ");
                                 }
                                 inventoryRemains.countDown();
                             }
-                        });
+                        }, "inv-check-" + appstore.getAppstoreName()).start();;
                     }
                 });
             }
