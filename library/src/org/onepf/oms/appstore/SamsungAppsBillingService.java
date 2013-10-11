@@ -55,7 +55,7 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
     private static final String TAG = SamsungAppsBillingService.class.getSimpleName();
 
     private static final int HONEYCOMB_MR1 = 12;
-    
+
     // IAP Modes are used for IAPConnector.init() 
     public static final int IAP_MODE_COMMERCIAL = 0;
     public static final int IAP_MODE_TEST_SUCCESS = 1;
@@ -94,6 +94,7 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
     public static final String JSON_KEY_ITEM_DOWNLOAD_URL = "mItemDownloadUrl";
     public static final String JSON_KEY_PURCHASE_DATE = "mPurchaseDate";
     public static final String JSON_KEY_PAYMENT_ID = "mPaymentId";
+    public static final String JSON_KEY_PURCHASE_ID = "mPurchaseId";
     public static final String JSON_KEY_TYPE = "mType";
     public static final String JSON_KEY_ITEM_PRICE_STRING = "mItemPriceString";
     // ========================================================================
@@ -136,6 +137,7 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
     private OnIabPurchaseFinishedListener mPurchaseListener = null;
     private int mRequestCode;
     private String mItemGroupId;
+    private String mExtraData;
 
     public SamsungAppsBillingService(Context context) {
         mContext = context;
@@ -232,6 +234,7 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
         mPurchaseListener = listener;
         mPurchasingItemType = itemType;
         mItemGroupId = itemGroupId;
+        mExtraData = extraData;
         Log.d(TAG, "Request code: " + requestCode);
         activity.startActivityForResult(intent, requestCode);
     }
@@ -280,8 +283,22 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
                         errorCode = IabHelper.BILLING_RESPONSE_RESULT_USER_CANCELED;
                         break;
                 }
+                String purchaseData = extras.getString(KEY_NAME_RESULT_OBJECT);
+                try {
+                    JSONObject purchaseJson = new JSONObject(purchaseData);
+
+                    purchase.setOrderId(purchaseJson.getString(JSON_KEY_PAYMENT_ID));
+                    purchase.setPurchaseTime(Long.parseLong(purchaseJson.getString(JSON_KEY_PURCHASE_DATE)));
+                    purchase.setToken(purchaseJson.getString(JSON_KEY_PURCHASE_ID));
+                } catch (JSONException e) {
+                    Log.e(TAG, "JSON parse error: " + e.getMessage());
+                }
+
                 purchase.setItemType(mPurchasingItemType);
                 purchase.setSku(OpenIabHelper.getSku(OpenIabHelper.NAME_SAMSUNG, mItemGroupId + '/' + itemId));
+                purchase.setPackageName(mContext.getPackageName());
+                purchase.setPurchaseState(0);
+                purchase.setDeveloperPayload(mExtraData);
             }
         }
         Log.d(TAG, "Samsung result code: " + errorCode + ", msg: " + errorMsg);
