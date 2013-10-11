@@ -26,9 +26,19 @@ import android.content.pm.PackageManager;
 import android.content.pm.Signature;
 
 /**
- * User: Boris Minaev
- * Date: 22.04.13
- * Time: 12:28
+ * PurchaseInfo(type:inapp): {
+ *     "orderId"            :TPMTID20131011RUI0515895,    // Samsung's payment id
+ *     "packageName"        :org.onepf.trivialdrive,
+ *     "productId"          :sku_gas,
+ *     "purchaseTime"       :1381508784209,               // time in millis
+ *     "purchaseState"      :0,                           // will be always zero
+ *     "developerPayload"   :,                            // available only in Purchase which return in OnIabPurchaseFinishedListener and
+ *                                                        // in OnConsumeFinishedListener. In other places it's equal empty string
+ *     "token"              :3218a5f30dd56ca459b16155a207e8af7b2cfe80a54f2aed846b2bbbd547c400
+ * }
+ *
+ * @author Ruslan Sayfutdinov
+ * @since 10.10.2013
  */
 public class SamsungApps extends DefaultAppstore {
     private static final String TAG = SamsungApps.class.getSimpleName();
@@ -82,12 +92,12 @@ public class SamsungApps extends DefaultAppstore {
 //        }
         return isDebugMode || iapInstalled;
     }
-    
+
     @Override
     public int getPackageVersion(String packageName) {
         return Appstore.PACKAGE_VERSION_UNDEFINED;
     }
-    
+
     @Override
     public AppstoreInAppBillingService getInAppBillingService() {
         if (mBillingService == null) {
@@ -100,6 +110,4 @@ public class SamsungApps extends DefaultAppstore {
     public String getAppstoreName() {
         return OpenIabHelper.NAME_SAMSUNG;
     }
-
-
 }
