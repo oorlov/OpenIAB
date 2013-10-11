@@ -14,7 +14,7 @@
  *        limitations under the License.
  ******************************************************************************/
 
-package org.onepf.oms.appstore;
+        package org.onepf.oms.appstore;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -28,13 +28,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.onepf.oms.AppstoreInAppBillingService;
 import org.onepf.oms.OpenIabHelper;
-import org.onepf.oms.appstore.googleUtils.IabException;
-import org.onepf.oms.appstore.googleUtils.IabHelper;
+import org.onepf.oms.appstore.googleUtils.*;
 import org.onepf.oms.appstore.googleUtils.IabHelper.OnIabPurchaseFinishedListener;
 import org.onepf.oms.appstore.googleUtils.IabHelper.OnIabSetupFinishedListener;
-import org.onepf.oms.appstore.googleUtils.IabResult;
-import org.onepf.oms.appstore.googleUtils.Inventory;
-import org.onepf.oms.appstore.googleUtils.Purchase;
 
 import android.app.Activity;
 import android.content.ComponentName;
@@ -47,6 +43,11 @@ import android.os.RemoteException;
 import android.util.Log;
 
 import com.sec.android.iap.IAPConnector;
+
+/**
+ * @author Ruslan Sayfutdinov
+ * @since 10.10.2013
+ */
 
 public class SamsungAppsBillingService implements AppstoreInAppBillingService {
     private static final int ITEM_RESPONSE_COUNT = 100;
@@ -152,7 +153,7 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
         intent.setComponent(com);
         ((Activity)mContext).startActivityForResult(intent, REQUEST_CODE_IS_ACCOUNT_CERTIFICATION);
     }
-    
+
     @Override
     public Inventory queryInventory(boolean querySkuDetails, List<String> moreItemSkus, List<String> moreSubsSkus) throws IabException {
         Inventory inventory = new Inventory();
@@ -183,7 +184,7 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
                 }
                 startNum += ITEM_RESPONSE_COUNT;
                 endNum += ITEM_RESPONSE_COUNT;
-            } while (processItemsBundle(itemInbox, itemGroupId, inventory, false, null));
+            } while (processItemsBundle(itemInbox, itemGroupId, inventory, querySkuDetails, true, false, null));
         }
         if (querySkuDetails) {
             Set<String> queryItemGroupIds = new HashSet<String>();
@@ -202,13 +203,19 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
             }
             if (!queryItemIds.isEmpty()) {
                 for (String itemGroupId : queryItemGroupIds) {
-                    Bundle itemList = null;
-                    try {
-                        itemList = mIapConnector.getItemList(CURRENT_MODE, mContext.getPackageName(), itemGroupId, 1, 100, ITEM_TYPE_ALL);
-                    } catch (RemoteException e) {
-                        Log.e(TAG, "Samsung getItemList: " + e.getMessage());
-                    }
-                    processItemsBundle(itemList, itemGroupId, inventory, true, queryItemIds);
+                    int startNum = 1;
+                    int endNum = ITEM_RESPONSE_COUNT;
+                    Bundle itemList;
+                    do {
+                        itemList = null;
+                        try {
+                            itemList = mIapConnector.getItemList(CURRENT_MODE, mContext.getPackageName(), itemGroupId, startNum, endNum, ITEM_TYPE_ALL);
+                        } catch (RemoteException e) {
+                            Log.e(TAG, "Samsung getItemList: " + e.getMessage());
+                        }
+                        startNum += ITEM_RESPONSE_COUNT;
+                        endNum += ITEM_RESPONSE_COUNT;
+                    } while (processItemsBundle(itemList, itemGroupId, inventory, querySkuDetails, false, true, queryItemIds));
                 }
             }
         }
@@ -379,7 +386,7 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
         mSetupListener.onIabSetupFinished(new IabResult(errorCode, errorMsg));
     }
 
-    private boolean processItemsBundle(Bundle itemsBundle, String itemGroupId, Inventory inventory, boolean addConsumable, Set<String> queryItemIds) {
+    private boolean processItemsBundle(Bundle itemsBundle, String itemGroupId, Inventory inventory, boolean querySkuDetails, boolean addPurchase, boolean addConsumable,  Set<String> queryItemIds) {
         if (itemsBundle == null || itemsBundle.getInt(KEY_NAME_STATUS_CODE) != IAP_ERROR_NONE) {
             return false;
         }
@@ -395,11 +402,28 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
                         continue;
                     }
                     String itemType = rawType.equals(ITEM_TYPE_SUBSCRIPTION) ? IabHelper.ITEM_TYPE_SUBS : IabHelper.ITEM_TYPE_INAPP;
+                    String sku = OpenIabHelper.getSku(OpenIabHelper.NAME_SAMSUNG, itemGroupId + '/' + itemId);
 
-                    Purchase purchase = new Purchase(OpenIabHelper.NAME_SAMSUNG);
-                    purchase.setItemType(itemType);
-                    purchase.setSku(OpenIabHelper.getSku(OpenIabHelper.NAME_SAMSUNG, itemGroupId + '/' + itemId));
-                    inventory.addPurchase(purchase);
+                    if (addPurchase) {
+                        Purchase purchase = new Purchase(OpenIabHelper.NAME_SAMSUNG);
+                        purchase.setItemType(itemType);
+                        purchase.setSku(sku);
+                        purchase.setPackageName(mContext.getPackageName());
+                        purchase.setPurchaseState(0);
+                        purchase.setDeveloperPayload("");
+
+                        purchase.setOrderId(item.getString(JSON_KEY_PAYMENT_ID));
+                        purchase.setPurchaseTime(Long.parseLong(item.getString(JSON_KEY_PURCHASE_DATE)));
+                        purchase.setToken(item.getString(JSON_KEY_PURCHASE_ID));
+
+                        inventory.addPurchase(purchase);
+                    }
+                    if (!addPurchase || querySkuDetails) {
+                        String name = item.getString(JSON_KEY_ITEM_NAME);
+                        String price = item.getString(JSON_KEY_ITEM_PRICE_STRING);
+                        String desc = item.getString(JSON_KEY_ITEM_DESC);
+                        inventory.addSkuDetails(new SkuDetails(itemType, sku, name, price, desc));
+                    }
                 }
             } catch (JSONException e) {
                 Log.e(TAG, "JSON parse error: " + e.getMessage());
