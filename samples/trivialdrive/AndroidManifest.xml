@@ -30,9 +30,10 @@
     <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="com.tmoney.vending.INBILLING"/>
-    <uses-permission android:name="com.yandex.store.permission.BILLING" />
     <uses-permission android:name="com.sec.android.iap.permission.BILLING"/>
-
+    <uses-permission android:name="org.onepf.openiab.permission.BILLING" />
+    
+>>>>>>> 7a6ff0f38e9215b32dc5965bd8324bb47bda5e39
     <permission android:name="com.tmoney.vending.INBILLING"/>
 
     <meta-data
