@@ -51,7 +51,7 @@ public class SamsungApps extends DefaultAppstore {
     private Context mContext;
 
     // isDebugMode = true -> always returns Samsung Apps is installer
-    static final boolean isDebugMode = true;
+    static final boolean isDebugMode = false;
 
     public SamsungApps(Context context) {
         mContext = context;
