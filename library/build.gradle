@@ -1,5 +1,6 @@
 version='current'
 group='org.onepf.openiab'
+//name='library'
 
 // apply plugin section start
 buildscript {

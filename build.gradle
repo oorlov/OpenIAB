@@ -1,0 +1,15 @@
+
+//project(':samples:trivialdrive'){
+   // archives project(':library')/
+//}
+defaultTasks ':library:uploadArchives',':samples:trivialdrive:assemble'
+allprojects{
+group='org.onepf.openiab'
+version='current'
+repositories {
+ivy {   // used to share binaries for samples
+        name "local";
+        url 'file://' + new File('./.ivy-repo').absolutePath
+    }
+}
+}
