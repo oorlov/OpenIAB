@@ -30,7 +30,7 @@ public abstract class DefaultAppstore implements Appstore {
     }
     
     public String toString() {
-        return "Store {" + getAppstoreName() + "}";
+        return "Store {name: " + getAppstoreName() + "}";
     }
 
 }

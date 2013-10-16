@@ -147,7 +147,7 @@ public class OpenAppstore extends DefaultAppstore {
     }
     
     public String toString() {
-        return "OpenStore {name: " + getAppstoreName() + "} "+ super.toString();
+        return "OpenStore {name: " + getAppstoreName() + "}";
         
     }
     
