@@ -172,7 +172,7 @@ public class MainActivity extends Activity {
         Map<String, String> storeKeys = new HashMap<String, String>();
         storeKeys.put(OpenIabHelper.NAME_GOOGLE, base64EncodedPublicKey);
         storeKeys.put(OpenIabHelper.NAME_TSTORE, tstoreAppId);
-        storeKeys.put("YandexPublicKey", YANDEX_PUBLIC_KEY);
+        storeKeys.put("com.yandex.store", YANDEX_PUBLIC_KEY);
         mHelper = new OpenIabHelper(this, storeKeys);
         
         // enable debug logging (for a production application, you should set this to false).
