@@ -195,6 +195,15 @@ public class OpenIabHelper {
         }
     }
 
+    public static List<String> getAllStoreSkus(final String appstoreName) {
+        Map<String, String> skuMap = sku2storeSkuMappings.get(appstoreName);
+        List<String> result = new ArrayList<String>();
+        if (skuMap != null) {
+            result.addAll(skuMap.values());
+        }
+        return result;
+    }
+
     public OpenIabHelper(Context context, Map<String, String> storeKeys) {
         this(context, storeKeys, null);
     }
@@ -239,7 +248,7 @@ public class OpenIabHelper {
                     stores2check.addAll(Arrays.asList(new Appstore[] {
                             new GooglePlay(context, storeKeys.get(OpenIabHelper.NAME_GOOGLE))
                             ,   new AmazonAppstore(context)
-                            ,   new SamsungApps(context, storeKeys.get(OpenIabHelper.NAME_SAMSUNG))
+                            ,   new SamsungApps(context)
                             ,   new TStore(context, storeKeys.get(OpenIabHelper.NAME_TSTORE))
                     }));
                 }
