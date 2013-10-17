@@ -58,7 +58,6 @@ local.properties
 *.tlb
 *.tli
 *.tlh
-*.tmp
 *.vspscc
 .builds
 *.dotCover
@@ -167,3 +166,5 @@ pip-log.txt
 gen/
 *.java.d
 *.iml
+/out/
+/.gradle/
