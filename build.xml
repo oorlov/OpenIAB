@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="OpenIAB-root" default="build" basedir=".">
+
+    <property name="out.dir" value="bin"/>
+
+    <target name="clean">
+        <ant antfile="library/build.xml" target="clean" useNativeBasedir="yes"/>
+        <ant antfile="samples/trivialdrive/build.xml" target="clean" useNativeBasedir="yes"/>
+        <delete dir="${out.dir}"/>
+    </target>
+
+    <target name="build">
+        <mkdir dir="${out.dir}"/>
+
+        <!-- library -->
+        <ant antfile="library/build.xml" target="fat_jar" useNativeBasedir="yes"/>
+        <copy file="library/bin/OpenIAB.jar" todir="${out.dir}"/>
+
+        <!-- Trivial Drive -->
+        <ant antfile="samples/trivialdrive/build.xml" target="debug" useNativeBasedir="yes"/>
+        <copy file="samples/trivialdrive/bin/TrivialDrive-debug.apk" tofile="${out.dir}/TrivialDrive.apk"/>
+    </target>
+
+</project>
