@@ -39,8 +39,6 @@
     <!-- ******************************************************* -->
 
     <target name="help">
-        <!-- displays starts at col 13
-              |13                                                              80| -->
         <echo>Android Ant Build. Available targets:</echo>
         <echo>   help:      Displays this help.</echo>
         <echo/>
