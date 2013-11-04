@@ -23,7 +23,15 @@
 
         <!-- library -->
         <ant antfile="library/build.xml" target="fat_jar" useNativeBasedir="yes"/>
-        <copy file="library/bin/OpenIAB.jar" todir="${out.dir}"/>
+        <copy file="library/bin/openiab.jar" todir="${out.dir}"/>
+
+        <!-- Amazon version -->
+        <ant antfile="library/build.xml" target="amazon_jar" useNativeBasedir="yes"/>
+        <copy file="library/bin/openiab-amazon.jar" todir="${out.dir}"/>
+
+        <!-- Samsung version -->
+        <ant antfile="library/build.xml" target="samsung_jar" useNativeBasedir="yes"/>
+        <copy file="library/bin/openiab-samsung.jar" todir="${out.dir}"/>
 
         <!-- Trivial Drive -->
         <ant antfile="samples/trivialdrive/build.xml" target="debug" useNativeBasedir="yes"/>
@@ -44,7 +52,7 @@
         <echo/>
         <echo>   clean:     Removes output files created by other targets.</echo>
         <echo/>
-        <echo>   release:   Builds the library, samples and unity plugin package.</echo>
+        <echo>   build:     Builds the library, samples and unity plugin package.</echo>
         <echo>              TrivialDrive.apk will be signed with a debug key.</echo>
         <echo>              ANDROID_HOME env variable and 'unity.path' property should be defined.</echo>
         <echo>              Binaries will be placed in the 'bin' folder.</echo>
