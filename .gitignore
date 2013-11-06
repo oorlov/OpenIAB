@@ -167,3 +167,10 @@ gen/
 *.iml
 /.gradle/
 /out/
+
+# Unity package build files
+*.jar
+*.jar.meta
+*.so
+*.so.meta
+
