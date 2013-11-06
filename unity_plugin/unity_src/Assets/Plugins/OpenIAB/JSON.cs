@@ -32,7 +32,11 @@ using System.Text;
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+<<<<<<< HEAD
 namespace OnePF {
+=======
+namespace OpenIabPlugin {
+>>>>>>> refs/remotes/origin/ant-build-script
     public class JSON {
 
         public Dictionary<string, object> fields = new Dictionary<string, object>();
