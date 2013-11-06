@@ -4,11 +4,7 @@ using System.Linq;
 using System.Text;
 using UnityEngine;
 
-<<<<<<< HEAD
 namespace OnePF {
-=======
-namespace OpenIabPlugin {
->>>>>>> refs/remotes/origin/ant-build-script
     public class Inventory {
         private Dictionary<String, SkuDetails> _skuMap = new Dictionary<String, SkuDetails>();
         private Dictionary<String, Purchase> _purchaseMap = new Dictionary<String, Purchase>();
@@ -29,7 +25,7 @@ namespace OpenIabPlugin {
             }
         }
 
-<<<<<<< HEAD
+#if UNITY_IOS
 		public Inventory(StoreKitProduct[] products) {
 			foreach (var product in products) {
 				string sku = OpenIAB_iOS.StoreSku2Sku(product.identifier);
@@ -39,6 +35,7 @@ namespace OpenIabPlugin {
 				}
 			}
 		}
+#endif
 
         public override string ToString() {
             StringBuilder str = new StringBuilder();
@@ -47,25 +44,11 @@ namespace OpenIabPlugin {
                 str.Append("\"" + pair.Key + "\":{" + pair.Value.ToString() + "}");
             }
             str.Append("},");
-=======
-        public override string ToString() {
-            StringBuilder str = new StringBuilder();
-            str.Append("purchaseMap:{");
-            foreach (var pair in _purchaseMap) {
-                str.Append("\"" + pair.Key + "\":{" + pair.Value.ToString() + "}");
-            }
-            str.Append("}; ");
->>>>>>> refs/remotes/origin/ant-build-script
             str.Append("skuMap:{");
             foreach (var pair in _skuMap) {
                 str.Append("\"" + pair.Key + "\":{" + pair.Value.ToString() + "}");
             }
-<<<<<<< HEAD
 			str.Append("}}");
-=======
-            str.Append("}");
->>>>>>> refs/remotes/origin/ant-build-script
-
             return str.ToString();
         }
 

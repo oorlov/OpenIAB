@@ -5,12 +5,15 @@ using System.Runtime.InteropServices;
 using System.Linq;
 
 namespace OnePF {
-	public class OpenIAB_iOS : IOpenIAB {
-
-		public static readonly string STORE = "appstore";
+    public class OpenIAB_iOS
+#if UNITY_IOS
+	: IOpenIAB 
+#endif
+ {
+        public static readonly string STORE = "appstore";
 
 #if UNITY_IOS
-		#region NativeMethods
+        #region NativeMethods
 		[DllImport ("__Internal")]
 		private static extern bool canMakePayments();
 		
@@ -31,7 +34,7 @@ namespace OnePF {
 
 		[DllImport ("__Internal")]
 		private static extern bool isProductPurchased(string identifier);
-		#endregion
+        #endregion
 
 		static Dictionary<string, string> _sku2storeSkuMappings = new Dictionary<string, string>();
 		static Dictionary<string, string> _storeSku2skuMappings = new Dictionary<string, string>();
@@ -145,6 +148,6 @@ namespace OnePF {
 		public static string Sku2StoreSku(string sku) {
 			return _sku2storeSkuMappings[sku];
 		}
-	}
 #endif
+    }
 }

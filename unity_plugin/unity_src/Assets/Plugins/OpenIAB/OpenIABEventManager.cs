@@ -76,6 +76,24 @@ public class OpenIABEventManager : MonoBehaviour {
         if (consumePurchaseFailedEvent != null)
             consumePurchaseFailedEvent(error);
     }
+
+    public void OnTransactionRestored(string sku) {
+        if (transactionRestoredEvent != null) {
+            transactionRestoredEvent(sku);
+        }
+    }
+
+    public void OnRestoreTransactionFailed(string error) {
+        if (restoreFailedEvent != null) {
+            restoreFailedEvent(error);
+        }
+    }
+
+    public void OnRestoreTransactionSucceeded(string message) {
+        if (restoreSucceededEvent != null) {
+            restoreSucceededEvent();
+        }
+    }
 #endif
 	
 #if UNITY_IOS 
