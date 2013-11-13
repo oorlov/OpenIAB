@@ -36,7 +36,6 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
-import android.os.Looper;
 import android.util.Log;
 
 /**
@@ -122,7 +121,6 @@ public class OpenIabHelper {
             if (skuMap.get(sku) != null) {
                 throw new IllegalArgumentException("Already specified sku: " + sku + ", storeSku: " + skuMap.get(sku));
             }
-            ;
             Map<String, String> storeSkuMap = storeSku2skuMappings.get(storeName);
             if (storeSkuMap == null) {
                 storeSkuMap = new HashMap<String, String>();
@@ -160,6 +158,14 @@ public class OpenIabHelper {
         }
     }
 
+    public static List<String> getAllStoreSkus(final String appstoreName) {
+        Map<String, String> skuMap = sku2storeSkuMappings.get(appstoreName);
+        List<String> result = new ArrayList<String>();
+        if (skuMap != null) {
+            result.addAll(skuMap.values());
+        }
+        return result;
+    }
     
     public interface OnOpenIabHelperInitFinished {
         public void onOpenIabHelperInitFinished();
@@ -182,7 +188,7 @@ public class OpenIabHelper {
         this.mServiceManager = new AppstoreServiceManager(context, storeKeys, prefferedStores, new Appstore[] {
                     new GooglePlay(context, storeKeys.get(OpenIabHelper.NAME_GOOGLE))
                 ,   new AmazonAppstore(context)
-                ,   new SamsungApps(context, storeKeys.get(OpenIabHelper.NAME_SAMSUNG))
+                ,   new SamsungApps(context)
                 ,   new TStore(context, storeKeys.get(OpenIabHelper.NAME_TSTORE))
         });
     }
@@ -256,16 +262,25 @@ public class OpenIabHelper {
         return mAppstoreBillingService.handleActivityResult(requestCode, resultCode, data);
     }
 
+    /**
+     * See {@link #queryInventory(boolean, List, List)} for details
+     */
     public Inventory queryInventory(boolean querySkuDetails, List<String> moreSkus) throws IabException {
         return queryInventory(querySkuDetails, moreSkus, null);
     }
 
     /**
+     * Queries the inventory. This will query all owned items from the server, as well as
+     * information on additional skus, if specified. This method may block or take long to execute.
+     * Do not call from a UI thread. For that, use the non-blocking version {@link #refreshInventoryAsync}.
      * 
-     * 
-     * @param querySkuDetails
-     * @param moreItemSkus
-     * @param moreSubsSkus - list of subscription skus to query regardless of ownership
+     * @param querySkuDetails if true, SKU details (price, description, etc) will be queried as well
+     *                        as purchase information.
+     * @param moreItemSkus    additional PRODUCT skus to query information on, regardless of ownership.
+     *                        Ignored if null or if querySkuDetails is false.
+     * @param moreSubsSkus    additional SUBSCRIPTIONS skus to query information on, regardless of ownership.
+     *                        Ignored if null or if querySkuDetails is false.
+     * @throws IabException if a problem occurs while refreshing the inventory.
      */
     public Inventory queryInventory(boolean querySkuDetails, List<String> moreItemSkus, List<String> moreSubsSkus) throws IabException {
         checkSetupDone("queryInventory");

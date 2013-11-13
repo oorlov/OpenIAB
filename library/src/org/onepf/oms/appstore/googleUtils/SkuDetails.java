@@ -80,6 +80,18 @@ public class SkuDetails {
         return mDescription;
     }
 
+    public String getItemType() {
+        return mItemType;
+    }
+
+    public String getJson() {
+        return mJson;
+    }
+    
+    void setSku(String sku) {
+        this.mSku = sku;
+    }
+
     @Override
     public String toString() {
         return String.format("SkuDetails: type = %s, SKU = %s, title = %s, price = %s, description = %s", mItemType, mSku, mTitle, mPrice, mDescription);

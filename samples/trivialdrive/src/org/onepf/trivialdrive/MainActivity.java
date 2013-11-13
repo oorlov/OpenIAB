@@ -26,10 +26,7 @@ import org.onepf.oms.appstore.googleUtils.Purchase;
 
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.content.BroadcastReceiver;
-import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
@@ -111,15 +108,18 @@ public class MainActivity extends Activity {
     static {
         OpenIabHelper.mapSku(SKU_PREMIUM, OpenIabHelper.NAME_AMAZON, "org.onepf.trivialdrive.amazon.premium");
         OpenIabHelper.mapSku(SKU_PREMIUM, OpenIabHelper.NAME_TSTORE, "tstore_sku_premium");
-        OpenIabHelper.mapSku(SKU_PREMIUM, OpenIabHelper.NAME_SAMSUNG, "samsung_sku_premium");
+        OpenIabHelper.mapSku(SKU_PREMIUM, OpenIabHelper.NAME_SAMSUNG, "100000100696/000001003746");
+        OpenIabHelper.mapSku(SKU_PREMIUM, "com.yandex.store", "org.onepf.trivialdrive.premium");
 
         OpenIabHelper.mapSku(SKU_GAS, OpenIabHelper.NAME_AMAZON, "org.onepf.trivialdrive.amazon.gas");
         OpenIabHelper.mapSku(SKU_GAS, OpenIabHelper.NAME_TSTORE, "tstore_sku_gas");
-        OpenIabHelper.mapSku(SKU_GAS, OpenIabHelper.NAME_SAMSUNG, "samsung_sku_gas");
+        OpenIabHelper.mapSku(SKU_GAS, OpenIabHelper.NAME_SAMSUNG, "100000100696/000001003744");
+        OpenIabHelper.mapSku(SKU_GAS, "com.yandex.store", "org.onepf.trivialdrive.gas");
 
         OpenIabHelper.mapSku(SKU_INFINITE_GAS, OpenIabHelper.NAME_AMAZON, "org.onepf.trivialdrive.amazon.infinite_gas");
         OpenIabHelper.mapSku(SKU_INFINITE_GAS, OpenIabHelper.NAME_TSTORE, "tstore_sku_infinite_gas");
-        OpenIabHelper.mapSku(SKU_INFINITE_GAS, OpenIabHelper.NAME_SAMSUNG, "samsung_sku_infinite_gas");
+        OpenIabHelper.mapSku(SKU_INFINITE_GAS, OpenIabHelper.NAME_SAMSUNG, "100000100696/000001003747");
+        OpenIabHelper.mapSku(SKU_INFINITE_GAS, "com.yandex.store", "org.onepf.trivialdrive.infinite_gas");
 
     }
     
@@ -138,7 +138,7 @@ public class MainActivity extends Activity {
 
     // The helper object
     OpenIabHelper mHelper;
-    
+
     /** is bililng setup is completed */
     private boolean setupDone = false;
 
@@ -161,10 +161,9 @@ public class MainActivity extends Activity {
          * want to make it easy for an attacker to replace the public key with one
          * of their own and then fake messages from the server.
          */
-        String base64EncodedPublicKey = "cONSTRUCT_YOUR_KEY_AND_PLACE_IT_HERE";
-        String samsungGroupId = "pLACE_HERE_SAMSUNG_GROUP_ID";
-        String tstoreAppId = "pLACE_HERE_TSTORE_APP_ID";
-        String YANDEX_PUBLIC_KEY = "pLACE_HERE_YANDEX_KEY";
+        String base64EncodedPublicKey = "CONSTRUCT_YOUR_KEY_AND_PLACE_IT_HERE";
+        String tstoreAppId = "PLACE_HERE_TSTORE_APP_ID";
+        String YANDEX_PUBLIC_KEY = "PLACE_HERE_YANDEX_KEY";
 
         // Some sanity checks to see if the developer (that's you!) really followed the
         // instructions to run this sample (don't put these checks on your app!)
@@ -179,13 +178,10 @@ public class MainActivity extends Activity {
         Log.d(TAG, "Creating IAB helper.");
         Map<String, String> storeKeys = new HashMap<String, String>();
         storeKeys.put(OpenIabHelper.NAME_GOOGLE, base64EncodedPublicKey);
-        storeKeys.put(OpenIabHelper.NAME_SAMSUNG, samsungGroupId);
         storeKeys.put(OpenIabHelper.NAME_TSTORE, tstoreAppId);
-        storeKeys.put("YandexPublicKey", YANDEX_PUBLIC_KEY);
+        storeKeys.put("com.yandex.store", YANDEX_PUBLIC_KEY);
         mHelper = new OpenIabHelper(this, storeKeys);
         
-        createBroadcasts();
-
         // enable debug logging (for a production application, you should set this to false).
         //mHelper.enableDebugLogging(true);
 
@@ -466,8 +462,6 @@ public class MainActivity extends Activity {
         Log.d(TAG, "Destroying helper.");
         if (mHelper != null) mHelper.dispose();
         mHelper = null;
-
-        destroyBroadcasts();
     }
 
     // updates UI to reflect model
@@ -536,43 +530,4 @@ public class MainActivity extends Activity {
         Log.d(TAG, "Loaded data: tank = " + String.valueOf(mTank));
     }
 
-     //TODO: how to implement automatically store specific broadcast services?
-
-    private void destroyBroadcasts() {
-        Log.d(TAG, "destroyBroadcasts");
-        try {
-            this.unregisterReceiver(mBillingReceiver);
-        } catch (Exception ex) {
-            Log.d(TAG, "destroyBroadcasts exception:\n" + ex.getMessage());
-        }
-    }
-
-    private void createBroadcasts() {
-        Log.d(TAG, "createBroadcasts");
-        IntentFilter filter = new IntentFilter(YANDEX_STORE_ACTION_PURCHASE_STATE_CHANGED);
-        this.registerReceiver(mBillingReceiver, filter);
-    }
-
-    // Yandex specific
-    public static final String YANDEX_STORE_SERVICE = "com.yandex.store.service";
-    public static final String YANDEX_STORE_ACTION_PURCHASE_STATE_CHANGED = YANDEX_STORE_SERVICE + ".PURCHASE_STATE_CHANGED";
-
-    private BroadcastReceiver mBillingReceiver = new BroadcastReceiver() {
-        private static final String TAG = "YandexBillingReceiver";
-
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            String action = intent.getAction();
-            Log.d(TAG, "onReceive intent: " + intent);
-
-            if (YANDEX_STORE_ACTION_PURCHASE_STATE_CHANGED.equals(action)) {
-                purchaseStateChanged(intent);
-            }
-        }
-
-        private void purchaseStateChanged(Intent data) {
-            Log.d(TAG, "purchaseStateChanged intent: " + data);
-            mHelper.handleActivityResult(RC_REQUEST, Activity.RESULT_OK, data);
-        }
-    };
 }

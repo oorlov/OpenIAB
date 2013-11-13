@@ -15,25 +15,32 @@
 
 package org.onepf.oms.appstore.googleUtils;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
+
+import org.json.JSONException;
+import org.onepf.oms.Appstore;
+import org.onepf.oms.AppstoreInAppBillingService;
+import org.onepf.oms.OpenIabHelper;
+import org.onepf.oms.appstore.GooglePlay;
+
 import android.app.Activity;
 import android.app.PendingIntent;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentSender.SendIntentException;
+import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.RemoteException;
 import android.text.TextUtils;
 import android.util.Log;
 
-import org.json.JSONException;
-import org.onepf.oms.Appstore;
-import org.onepf.oms.OpenIabHelper;
-import org.onepf.oms.appstore.IabHelperBillingService;
-
-import java.util.ArrayList;
-import java.util.List;
-
+import com.android.vending.billing.IInAppBillingService;
 
 /**
  * Provides convenience methods for in-app billing. You can create one instance of this
@@ -66,10 +73,18 @@ import java.util.List;
  *
  * @author Bruno Oliveira (Google)
  */
-public class IabHelper {
+public class IabHelper implements AppstoreInAppBillingService {
+    private static final String TAG = IabHelper.class.getSimpleName();
+    
+    /**
+     * TODO: move to Options? 
+     * Google Play doesn't support getSkuDetails for more than 20 SKUs at once 
+     */
+    public static final int QUERY_SKU_DETAILS_BATCH_SIZE = 20;
+    
     // Is debug logging enabled?
     boolean mDebugLog = true;
-    String mDebugTag = "IabHelper";
+    String mDebugTag = TAG;
 
     // Is setup done?
     boolean mSetupDone = false;
@@ -88,8 +103,10 @@ public class IabHelper {
     // Context we were passed during initialization
     Context mContext;
 
+
     // Connection to the service
-    IabHelperBillingService mService;
+    IInAppBillingService mService;
+    ServiceConnection mServiceConn;
 
     // The request code used to launch purchase flow
     int mRequestCode;
@@ -144,7 +161,7 @@ public class IabHelper {
 
     /** TODO: IabHelper for Google and OpenStore must not be same */
     private Appstore appstore;
-    
+
     /**
      * Creates an instance. After creation, it will not yet be ready to use. You must perform
      * setup by calling {@link #startSetup} and wait for setup to complete. This constructor does not
@@ -202,9 +219,84 @@ public class IabHelper {
 
         // Connection to IAB service
         logDebug("Starting in-app billing setup.");
-        mService = new IabHelperBillingService(mContext);
-        mService.setIabHelper(this);
-        mService.bindService(listener);
+        mServiceConn = new ServiceConnection() {
+            @Override
+            public void onServiceDisconnected(ComponentName name) {
+                logDebug("Billing service disconnected.");
+                mService = null;
+            }
+
+            @Override
+            public void onServiceConnected(ComponentName name, IBinder service) {
+                logDebug("Billing service connected.");
+                mService = getServiceFromBinder(service);
+                String packageName = mContext.getPackageName();
+                try {
+                    logDebug("Checking for in-app billing 3 support.");
+
+                    // check for in-app billing v3 support
+                    int response = mService.isBillingSupported(3, packageName, ITEM_TYPE_INAPP);
+                    if (response != BILLING_RESPONSE_RESULT_OK) {
+                        if (listener != null) listener.onIabSetupFinished(new IabResult(response,
+                                "Error checking for billing v3 support."));
+
+                        // if in-app purchases aren't supported, neither are subscriptions.
+                        mSubscriptionsSupported = false;
+                        return;
+                    }
+                    logDebug("In-app billing version 3 supported for " + packageName);
+
+                    // check for v3 subscriptions support
+                    response = mService.isBillingSupported(3, packageName, ITEM_TYPE_SUBS);
+                    if (response == BILLING_RESPONSE_RESULT_OK) {
+                        logDebug("Subscriptions AVAILABLE.");
+                        mSubscriptionsSupported = true;
+                    }
+                    else {
+                        logDebug("Subscriptions NOT AVAILABLE. Response: " + response);
+                    }
+
+                    mSetupDone = true;
+                } catch (RemoteException e) {
+                    if (listener != null) {
+                        listener.onIabSetupFinished(new IabResult(IABHELPER_REMOTE_EXCEPTION,
+                                                    "RemoteException while setting up in-app billing."));
+                    }
+                    Log.e(TAG, "RemoteException while setting up in-app billing", e);
+                    return;
+                }
+
+                if (listener != null) {
+                    listener.onIabSetupFinished(new IabResult(BILLING_RESPONSE_RESULT_OK, "Setup successful."));
+                }
+            }
+        };
+
+        Intent serviceIntent = getServiceIntent();
+        if (!mContext.getPackageManager().queryIntentServices(serviceIntent, 0).isEmpty()) {
+            // service available to handle that Intent
+            mContext.bindService(serviceIntent, mServiceConn, Context.BIND_AUTO_CREATE);
+        } else {
+            // no service available to handle that Intent
+            if (listener != null) {
+                listener.onIabSetupFinished(new IabResult(BILLING_RESPONSE_RESULT_BILLING_UNAVAILABLE,
+                        "Billing service unavailable on device.")); 
+            }
+        }
+    }
+
+    /**
+     * IabHelper code is shared between OpenStore and Google Play, but services has different names  
+     */
+    protected Intent getServiceIntent() {
+        final Intent intent = new Intent(GooglePlay.VENDING_ACTION);
+        intent.setPackage(GooglePlay.ANDROID_INSTALLER);
+        return intent;
+    }
+
+    /** Override to return needed service interface */
+    protected IInAppBillingService getServiceFromBinder(IBinder service) {
+        return IInAppBillingService.Stub.asInterface(service);
     }
 
     /**
@@ -216,9 +308,13 @@ public class IabHelper {
     public void dispose() {
         logDebug("Disposing.");
         mSetupDone = false;
-        mService.dispose();
-        mService = null;
-        mPurchaseListener = null;
+        if (mServiceConn != null) {
+            logDebug("Unbinding from service.");
+            if (mContext != null) mContext.unbindService(mServiceConn);
+            mServiceConn = null;
+            mService = null;
+            mPurchaseListener = null;
+        }
     }
 
     /**
@@ -424,7 +520,7 @@ public class IabHelper {
             String sku = purchase.getSku();
             purchase.setSku(OpenIabHelper.getSku(appstore.getAppstoreName(), sku));
 
-            if(!isValidDataSignature(mSignatureBase64, purchaseData, dataSignature)) {
+            if (!isValidDataSignature(mSignatureBase64, purchaseData, dataSignature)) {
                 logError("Purchase signature verification FAILED for sku " + sku);
                 result = new IabResult(IABHELPER_VERIFICATION_FAILED, "Signature verification failed for sku " + sku);
                 if (mPurchaseListener != null) mPurchaseListener.onIabPurchaseFinished(result, purchase);
@@ -489,7 +585,7 @@ public class IabHelper {
                 }
 
                 if (querySkuDetails) {
-                    r = querySkuDetails(ITEM_TYPE_SUBS, inv, moreItemSkus);
+                    r = querySkuDetails(ITEM_TYPE_SUBS, inv, moreSubsSkus);
                     if (r != BILLING_RESPONSE_RESULT_OK) {
                         throw new IabException(r, "Error refreshing inventory (querying prices of subscriptions).");
                     }
@@ -691,13 +787,10 @@ public class IabHelper {
             if (index >= 0 && index < iabhelper_msgs.length) return iabhelper_msgs[index];
             else return String.valueOf(code) + ":Unknown IAB Helper Error";
         } else if (code < 0 || code >= iab_msgs.length) {
-            String description = IabHelperBillingService.getResponseDesc(code);
-            if (description == null) {
-                description = String.valueOf(code) + ":Unknown";
-            }
-            return description;
-        } else
+            return String.valueOf(code) + ":Unknown";
+        } else {
             return iab_msgs[code];
+        }
     }
 
 
@@ -787,13 +880,7 @@ public class IabHelper {
                 String signature = signatureList.get(i);
                 String sku = ownedSkus.get(i);
 
-                if (!isValidDataSignature(mSignatureBase64, purchaseData, signature)) {
-                    logDebug("   Purchase data: " + purchaseData);
-                    logDebug("   Signature: " + signature);
-                    verificationFailed = true;
-                }
-
-                if (verificationFailed == false) {
+                if (isValidDataSignature(mSignatureBase64, purchaseData, signature)) {
                     logDebug("Sku is owned: " + sku);
                     Purchase purchase = new Purchase(itemType, purchaseData, signature, appstore.getAppstoreName());
                     String storeSku = purchase.getSku();
@@ -806,14 +893,11 @@ public class IabHelper {
 
                     // Record ownership and token
                     inv.addPurchase(purchase);
-                    /*
-                    } else {
-                        logWarn("Purchase signature verification **FAILED**. Not adding item.");
-                        logDebug("   Purchase data: " + purchaseData);
-                        logDebug("   Signature: " + signature);
-                        verificationFailed = true;
-                    }
-                    */
+                } else {
+                    logWarn("Purchase signature verification **FAILED**. Not adding item.");
+                    logDebug("   Purchase data: " + purchaseData);
+                    logDebug("   Signature: " + signature);
+                    verificationFailed = true;
                 }
             }
 
@@ -823,46 +907,71 @@ public class IabHelper {
 
         return verificationFailed ? IABHELPER_VERIFICATION_FAILED : BILLING_RESPONSE_RESULT_OK;
     }
-
-    int querySkuDetails(String itemType, Inventory inv, List<String> moreSkus)
-            throws RemoteException, JSONException {
-        logDebug("Querying SKU details.");
-        ArrayList<String> skuList = new ArrayList<String>();
-        skuList.addAll(inv.getAllOwnedSkus(itemType));
-        if (moreSkus != null) skuList.addAll(moreSkus);
-
-        if (skuList.size() == 0) {
-            logDebug("queryPrices: nothing to do because there are no SKUs.");
+    
+    /**
+     * @param inv - Inventory with application SKUs 
+     * @param moreSkus - storeSKUs (processed in {@link OpenIabHelper#queryInventory(boolean, List, List)} 
+     */
+    int querySkuDetails(String itemType, Inventory inv, List<String> moreSkus) throws RemoteException, JSONException {
+        logDebug("querySkuDetails() Querying SKU details.");
+        Set<String> storeSkus = new TreeSet<String>();
+        final List<String> allOwnedSkus = inv.getAllOwnedSkus(itemType);
+        for (String sku : allOwnedSkus) {
+            storeSkus.add(OpenIabHelper.getStoreSku(appstore.getAppstoreName(), sku));
+        }
+        if (moreSkus != null) {
+            for (String sku : moreSkus) {
+                storeSkus.add(OpenIabHelper.getStoreSku(appstore.getAppstoreName(), sku));
+            }
+        }
+        if (storeSkus.size() == 0) {
+            logDebug("querySkuDetails(): nothing to do because there are no SKUs.");
             return BILLING_RESPONSE_RESULT_OK;
         }
 
-        Bundle querySkus = new Bundle();
-        querySkus.putStringArrayList(GET_SKU_DETAILS_ITEM_LIST, skuList);
-        Bundle skuDetails = mService.getSkuDetails(3, getPackageName(),
-                itemType, querySkus);
+        // Split the sku list in blocks of no more than QUERY_SKU_DETAILS_BATCH_SIZE elements.
+        ArrayList<ArrayList<String>> batches = new ArrayList<ArrayList<String>>();
+        ArrayList<String> tmpBatch = new ArrayList<String>(QUERY_SKU_DETAILS_BATCH_SIZE);
+        int iSku = 0;
+        for (String sku : storeSkus) {
+            tmpBatch.add(sku);
+            iSku++;
+            if (tmpBatch.size() == QUERY_SKU_DETAILS_BATCH_SIZE || iSku == storeSkus.size()) {
+                batches.add(tmpBatch);
+                tmpBatch = new ArrayList<String>(QUERY_SKU_DETAILS_BATCH_SIZE);
+            }
+        }
+        
+        logDebug("querySkuDetails() batches: " + batches.size() + ", " + batches);
+        
+        for (ArrayList<String> batch : batches) {
+            Bundle querySkus = new Bundle();
+            querySkus.putStringArrayList(GET_SKU_DETAILS_ITEM_LIST, batch);
+            Bundle skuDetails = mService.getSkuDetails(3, mContext.getPackageName(), itemType, querySkus);
 
-        if (!skuDetails.containsKey(RESPONSE_GET_SKU_DETAILS_LIST)) {
-            int response = getResponseCodeFromBundle(skuDetails);
-            if (response != BILLING_RESPONSE_RESULT_OK) {
-                logDebug("getSkuDetails() failed: " + getResponseDesc(response));
-                return response;
-            } else {
-                logError("getSkuDetails() returned a bundle with neither an error nor a detail list.");
-                return IABHELPER_BAD_RESPONSE;
+            if (!skuDetails.containsKey(RESPONSE_GET_SKU_DETAILS_LIST)) {
+                int response = getResponseCodeFromBundle(skuDetails);
+                if (response != BILLING_RESPONSE_RESULT_OK) {
+                    logDebug("getSkuDetails() failed: " + getResponseDesc(response));
+                    return response;
+                } else {
+                    logError("getSkuDetails() returned a bundle with neither an error nor a detail list.");
+                    return IABHELPER_BAD_RESPONSE;
+                }
+            }
+
+            ArrayList<String> responseList = skuDetails.getStringArrayList(RESPONSE_GET_SKU_DETAILS_LIST);
+
+            for (String thisResponse : responseList) {
+                SkuDetails d = new SkuDetails(itemType, thisResponse);
+                d.setSku(OpenIabHelper.getSku(appstore.getAppstoreName(), d.getSku()));
+                logDebug("querySkuDetails() Got sku details: " + d);
+                inv.addSkuDetails(d);
             }
         }
 
-        ArrayList<String> responseList = skuDetails.getStringArrayList(
-                RESPONSE_GET_SKU_DETAILS_LIST);
-
-        for (String thisResponse : responseList) {
-            SkuDetails d = new SkuDetails(itemType, thisResponse);
-            logDebug("Got sku details: " + d);
-            inv.addSkuDetails(d);
-        }
         return BILLING_RESPONSE_RESULT_OK;
     }
-
 
     void consumeAsyncInternal(final List<Purchase> purchases,
                               final OnConsumeFinishedListener singleListener,
@@ -912,14 +1021,9 @@ public class IabHelper {
         Log.w(mDebugTag, "In-app billing warning: " + msg);
     }
 
-    boolean isValidDataSignature(String base64PublicKey, String signedData, String signature) {
-        boolean isValid = true;
-        if (mService.isDataSignatureSupported() == false) {
-            logWarn("Signature verification is not supported");
-        } else {
-            isValid = Security.verifyPurchase(base64PublicKey, signedData, signature);
-        }
-        if (isValid == false) {
+    boolean isValidDataSignature(String base64PublicKey, String purchaseData, String signature) {
+        boolean isValid = Security.verifyPurchase(base64PublicKey, purchaseData, signature);
+        if (!isValid) {
             logWarn("Purchase signature verification **FAILED**.");
         }
         return isValid;
