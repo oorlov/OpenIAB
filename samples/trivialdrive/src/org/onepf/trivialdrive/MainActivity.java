@@ -194,7 +194,7 @@ public class MainActivity extends Activity {
 
                 if (!result.isSuccess()) {
                     // Oh noes, there was a problem.
-                    complainE("Problem setting up in-app billing: " + result);
+                    complain("Problem setting up in-app billing: " + result);
                     return;
                 }
 
@@ -211,7 +211,7 @@ public class MainActivity extends Activity {
         public void onQueryInventoryFinished(IabResult result, Inventory inventory) {
             Log.d(TAG, "Query inventory finished.");
             if (result.isFailure()) {
-                complainE("Failed to query inventory: " + result);
+                complain("Failed to query inventory: " + result);
                 return;
             }
 
@@ -378,12 +378,12 @@ public class MainActivity extends Activity {
         public void onIabPurchaseFinished(IabResult result, Purchase purchase) {
             Log.d(TAG, "Purchase finished: " + result + ", purchase: " + purchase);
             if (result.isFailure()) {
-                complainE("Error purchasing: " + result);
+                complain("Error purchasing: " + result);
                 setWaitScreen(false);
                 return;
             }
             if (!verifyDeveloperPayload(purchase)) {
-                complainE("Error purchasing. Authenticity verification failed.");
+                complain("Error purchasing. Authenticity verification failed.");
                 setWaitScreen(false);
                 return;
             }
@@ -432,7 +432,7 @@ public class MainActivity extends Activity {
                 alert("You filled 1/4 tank. Your tank is now " + String.valueOf(mTank) + "/4 full!");
             }
             else {
-                complainE("Error while consuming: " + result);
+                complain("Error while consuming: " + result);
             }
             updateUi();
             setWaitScreen(false);
@@ -492,14 +492,14 @@ public class MainActivity extends Activity {
         findViewById(R.id.screen_wait).setVisibility(set ? View.VISIBLE : View.GONE);
     }
 
-    void complainE(String message) {
-        Log.e(TAG, "**** TrivialDrive Error: " + message);
-        Toast.makeText(this, "Welcome back, Driver!", Toast.LENGTH_SHORT).show();
-    }
-    
     void complain(String message) {
         Log.e(TAG, "**** TrivialDrive Error: " + message);
-        alert("Error: " + message);
+        boolean isAmazon = true;
+        if (isAmazon) {
+            Toast.makeText(this, "Welcome back, Driver!", Toast.LENGTH_SHORT).show();
+        } else {
+            alert("Error: " + message);
+        }
     }
 
     void alert(String message) {
