@@ -265,7 +265,7 @@ public class MainActivity extends Activity {
         }
 
         if (!setupDone) {
-            complain("Amazon Purchases Setup is not completed yet");
+            complain("Billing Setup is not completed yet");
             return;
         }
         // launch the gas purchase UI flow.
@@ -287,7 +287,7 @@ public class MainActivity extends Activity {
         Log.d(TAG, "Upgrade button clicked; launching purchase flow for upgrade.");
         
         if (!setupDone) {
-            complain("Amazon Purchases Setup is not completed yet");
+            complain("Billing Setup is not completed yet");
             return;
         }
 
@@ -306,7 +306,7 @@ public class MainActivity extends Activity {
     // flow for subscription.
     public void onInfiniteGasButtonClicked(View arg0) {
         if (!setupDone) {
-            complain("Amazon Purchases Setup is not completed yet");
+            complain("Billing Setup is not completed yet");
             return;
         }
 
@@ -494,8 +494,7 @@ public class MainActivity extends Activity {
 
     void complain(String message) {
         Log.e(TAG, "**** TrivialDrive Error: " + message);
-        boolean isAmazon = true;
-        if (isAmazon) {
+        if (true) { // set true for Amazon. They don't allow alerts in such cases   
             Toast.makeText(this, "Welcome back, Driver!", Toast.LENGTH_SHORT).show();
         } else {
             alert("Error: " + message);
