@@ -31,7 +31,7 @@ import android.util.Log;
 public class AmazonAppstore extends DefaultAppstore {
     private static final String TAG = AmazonAppstore.class.getSimpleName();
     
-    private volatile Boolean sandboxMode = false;
+    private volatile Boolean sandboxMode;// = false;
     
     private final Context mContext;
     
@@ -44,36 +44,21 @@ public class AmazonAppstore extends DefaultAppstore {
     @Override
     public boolean isPackageInstaller(String packageName) {
         Log.d(TAG, "isPackageInstaller() packageName: " + packageName);
-        
+        if (sandboxMode != null) {
+            return !sandboxMode;
+        }
         synchronized (AmazonAppstore.class) {
             try {
                 ClassLoader localClassLoader = AmazonAppstore.class.getClassLoader();
                 localClassLoader.loadClass("com.amazon.android.Kiwi");
-                return true;
+                sandboxMode = false;
             } catch (Throwable localThrowable) {
                 Log.d(TAG, "isPackageInstaller() cannot load class com.amazon.android.Kiwi ");
                 sandboxMode = true;
             }
-            
-            try {
-                ClassLoader systemCL = AmazonAppstore.class.getClassLoader().getSystemClassLoader();
-                systemCL.loadClass("com.amazon.android.Kiwi");
-                return true;
-            } catch (Throwable localThrowable) {
-                Log.d(TAG, "isPackageInstaller() cannot load class com.amazon.android.Kiwi with system classloader");
-                sandboxMode = true;
-            }
-            try {
-                Class.forName("com.amazon.android.Kiwi");
-                return true;
-            } catch (Throwable localThrowable) {
-                Log.d(TAG, "isPackageInstaller() cannot load class com.amazon.android.Kiwi by Class.forName()");
-                sandboxMode = true;
-            }
-            
         }
         Log.d(TAG, "isPackageInstaller() sandBox: " + sandboxMode);
-        return true;
+        return !sandboxMode;
     }
 
     /**
