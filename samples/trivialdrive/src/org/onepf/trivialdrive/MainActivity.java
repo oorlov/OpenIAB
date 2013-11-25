@@ -494,7 +494,7 @@ public class MainActivity extends Activity {
 
     void complain(String message) {
         Log.e(TAG, "**** TrivialDrive Error: " + message);
-        if (true) { // set true for Amazon. They don't allow alerts in such cases
+        if (false) { // set true for Amazon. Amazon moderators don't allow alerts in such cases
             Toast.makeText(this, "Welcome back, Driver!", Toast.LENGTH_SHORT).show();
         } else {
             alert("Error: " + message);
