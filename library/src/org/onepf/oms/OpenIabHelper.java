@@ -195,6 +195,10 @@ public class OpenIabHelper {
         }
     }
 
+    /**
+     * @param appstoreName for example {@link OpenIabHelper#NAME_AMAZON}
+     * @return list of skus those have mappings for specified appstore 
+     */
     public static List<String> getAllStoreSkus(final String appstoreName) {
         Map<String, String> skuMap = sku2storeSkuMappings.get(appstoreName);
         List<String> result = new ArrayList<String>();
@@ -241,16 +245,18 @@ public class OpenIabHelper {
                 List<Appstore> stores2check = new ArrayList<Appstore>(); 
                 if (availableStores != null) {
                     stores2check.addAll(availableStores);
-                } else { // if appstores are not specified by user - look up for all available stores
+                } else { // if appstores are not specified by user - lookup for all available stores
                     final List<Appstore> openStores = discoverOpenStores(context, null, storeKeys);
                     Log.d(TAG, "startSetup() discovered openstores: " + openStores.toString());
                     stores2check.addAll(openStores);
-                    stores2check.addAll(Arrays.asList(new Appstore[] {
-                            new GooglePlay(context, storeKeys.get(OpenIabHelper.NAME_GOOGLE))
-                            ,   new AmazonAppstore(context)
-                            ,   new SamsungApps(context)
-                            ,   new TStore(context, storeKeys.get(OpenIabHelper.NAME_TSTORE))
-                    }));
+                    stores2check.add(new GooglePlay(context, storeKeys.get(OpenIabHelper.NAME_GOOGLE)));
+                    stores2check.add(new AmazonAppstore(context));
+                    stores2check.add(new TStore(context, storeKeys.get(OpenIabHelper.NAME_TSTORE)));
+                    if (getAllStoreSkus(NAME_SAMSUNG).size() > 0) {  
+                        // SamsungApps shows lot of unnecessary UI during init 
+                        // try it only if samsung SKUs are specified
+                        stores2check.add(new SamsungApps(context));
+                    }
                 }
                 
                 if (checkInventory) {
