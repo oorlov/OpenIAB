@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.onepf.oms.OpenIabHelper;
+import org.onepf.oms.appstore.AmazonAppstore;
 import org.onepf.oms.appstore.googleUtils.IabHelper;
 import org.onepf.oms.appstore.googleUtils.IabResult;
 import org.onepf.oms.appstore.googleUtils.Inventory;
@@ -501,7 +502,7 @@ public class MainActivity extends Activity {
 
     void complain(String message) {
         Log.e(TAG, "**** TrivialDrive Error: " + message);
-        if (false) { // set true for Amazon. Amazon moderators don't allow alerts in such cases
+        if (AmazonAppstore.hasAmazonClasses()) { // Amazon moderators don't allow alert dialogs for in-apps
             Toast.makeText(this, "Welcome back, Driver!", Toast.LENGTH_SHORT).show();
         } else {
             alert("Error: " + message);
