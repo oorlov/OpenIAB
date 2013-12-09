@@ -309,8 +309,14 @@ public class MainActivity extends Activity {
     }
     
     @Override
+    public void startActivityForResult(Intent intent, int requestCode) {
+        Log.d(TAG, "startActivityForResult() intent: " + intent + " requestCode: " + requestCode);
+        super.startActivityForResult(intent, requestCode);
+    }
+
+    @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        Log.d(TAG, "onActivityResult(" + requestCode + "," + resultCode + "," + data);
+        Log.d(TAG, "onActivityResult() requestCode: " + requestCode+ " resultCode: " + resultCode+ " data: " + data);
 
         // Pass on the activity result to the helper for handling
         if (!mHelper.handleActivityResult(requestCode, resultCode, data)) {
