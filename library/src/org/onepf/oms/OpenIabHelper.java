@@ -33,6 +33,7 @@ import org.onepf.oms.appstore.OpenAppstore;
 import org.onepf.oms.appstore.SamsungApps;
 import org.onepf.oms.appstore.SamsungAppsBillingService;
 import org.onepf.oms.appstore.TStore;
+import org.onepf.oms.appstore.fortumo.FortumoStore;
 import org.onepf.oms.appstore.googleUtils.IabException;
 import org.onepf.oms.appstore.googleUtils.IabHelper;
 import org.onepf.oms.appstore.googleUtils.IabHelper.OnIabPurchaseFinishedListener;
@@ -129,6 +130,7 @@ public class OpenIabHelper {
     public static final String NAME_AMAZON = "com.amazon.apps";
     public static final String NAME_TSTORE = "com.tmobile.store";
     public static final String NAME_SAMSUNG = "com.samsung.apps";
+    public static final String NAME_FORTUMO = "fortumo";
 
     /** 
      * NOTE: used as sync object in related methods<br>
@@ -323,6 +325,10 @@ public class OpenIabHelper {
                     }
                     stores2check.add(new AmazonAppstore(context));
                     stores2check.add(new TStore(context, options.storeKeys.get(OpenIabHelper.NAME_TSTORE)));
+                    if (options.supportFortumo) {
+                        //todo write a comment
+                        stores2check.add(new FortumoStore(context));
+                    }
                     if (getAllStoreSkus(NAME_SAMSUNG).size() > 0) {  
                         // SamsungApps shows lot of UI stuff during init 
                         // try it only if samsung SKUs are specified
@@ -941,6 +947,8 @@ public class OpenIabHelper {
         /** Used for SamsungApps setup. Specify your own value if default one interfere your code.
          * <p>default value is {@link SamsungAppsBillingService#REQUEST_CODE_IS_ACCOUNT_CERTIFICATION} */
         public int samsungCertificationRequestCode = SamsungAppsBillingService.REQUEST_CODE_IS_ACCOUNT_CERTIFICATION;
+
+        public boolean supportFortumo = false;
     }
 
 }
