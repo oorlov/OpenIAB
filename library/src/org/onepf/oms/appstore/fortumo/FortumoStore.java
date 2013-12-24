@@ -13,8 +13,7 @@ import org.onepf.oms.OpenIabHelper;
 
 public class FortumoStore extends DefaultAppstore {
     private Context context;
-    private boolean isBillingAvailable = true; //todo get rid of it
-    private FortumoBillingService mBillingService;
+    private FortumoBillingService billingService;
 
     public FortumoStore(Context context) {
         this.context = context;
@@ -27,8 +26,7 @@ public class FortumoStore extends DefaultAppstore {
 
     @Override
     public boolean isBillingAvailable(String packageName) {
-//        return OpenIabHelper.getAllStoreSkus(OpenIabHelper.NAME_FORTUMO).size() > 0; //wtf?!
-        return true;
+        return OpenIabHelper.getAllStoreSkus(OpenIabHelper.NAME_FORTUMO).size() > 0;
     }
 
     @Override
@@ -43,9 +41,9 @@ public class FortumoStore extends DefaultAppstore {
 
     @Override
     public AppstoreInAppBillingService getInAppBillingService() {
-        if (mBillingService == null) {
-            mBillingService = new FortumoBillingService();
+        if (billingService == null) {
+            billingService = new FortumoBillingService(context);
         }
-        return mBillingService;
+        return billingService;
     }
 }

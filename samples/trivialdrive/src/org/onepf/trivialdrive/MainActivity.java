@@ -15,11 +15,6 @@
 
 package org.onepf.trivialdrive;
 
-import java.lang.reflect.Field;
-import java.util.HashMap;
-import java.util.Map;
-
-import android.*;
 import org.onepf.oms.OpenIabHelper;
 import org.onepf.oms.appstore.AmazonAppstore;
 import org.onepf.oms.appstore.googleUtils.IabHelper;
@@ -119,7 +114,11 @@ public class MainActivity extends Activity {
 //        OpenIabHelper.mapSku(SKU_GAS, OpenIabHelper.NAME_TSTORE, "tstore_sku_gas");
 //        OpenIabHelper.mapSku(SKU_GAS, OpenIabHelper.NAME_SAMSUNG, "100000100696/000001003744");
 //        OpenIabHelper.mapSku(SKU_GAS, "com.yandex.store", "org.onepf.trivialdrive.gas");
-        OpenIabHelper.mapSku(SKU_GAS, OpenIabHelper.NAME_FORTUMO, "c5729224f5c89d63c37d8fbbada50867,6481773efc593a70ee03167b3f8813cf");
+//        OpenIabHelper.mapSku(SKU_GAS, OpenIabHelper.NAME_FORTUMO, "c5729224f5c89d63c37d8fbbada50867,6481773efc593a70ee03167b3f8813cf");
+//        OpenIabHelper.mapSku(SKU_GAS, OpenIabHelper.NAME_FORTUMO, "35e9f35a3a49a0edba3c16c1db335127,8e4359f0d7e1727d9784fd277abe0e17");
+//        OpenIabHelper.mapSku(SKU_GAS, OpenIabHelper.NAME_FORTUMO, "35e9f35a3a49a0edba3c16c1db335127,8e4359f0d7e1727d9784fd277abe0e17");
+//        OpenIabHelper.mapSku(SKU_GAS, OpenIabHelper.NAME_FORTUMO, "c35334692e8fa7ab677a935a436c2d13,37be1c61661847cbb3342fd5c0470d5a,false");
+        OpenIabHelper.mapSku(SKU_GAS, OpenIabHelper.NAME_FORTUMO, "c35334692e8fa7ab677a935a436c2d13,37be1c61661847cbb3342fd5c0470d5a,false,sku_gas");
 
 //        OpenIabHelper.mapSku(SKU_INFINITE_GAS, OpenIabHelper.NAME_AMAZON, "org.onepf.trivialdrive.amazon.infinite_gas");
 //        OpenIabHelper.mapSku(SKU_INFINITE_GAS, OpenIabHelper.NAME_TSTORE, "tstore_sku_infinite_gas");
