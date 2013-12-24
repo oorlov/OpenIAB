@@ -15,10 +15,12 @@
 
 package org.onepf.trivialdrive;
 
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Map;
 
+import org.onepf.oms.Appstore;
 import org.onepf.oms.OpenIabHelper;
+import org.onepf.oms.OpenIabHelper.Options;
 import org.onepf.oms.appstore.AmazonAppstore;
 import org.onepf.oms.appstore.googleUtils.IabHelper;
 import org.onepf.oms.appstore.googleUtils.IabResult;
@@ -27,6 +29,7 @@ import org.onepf.oms.appstore.googleUtils.Purchase;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -161,25 +164,37 @@ public class MainActivity extends Activity {
          * want to make it easy for an attacker to replace the public key with one
          * of their own and then fake messages from the server.
          */
-        String base64EncodedPublicKey = "CONSTRUCT_YOUR_KEY_AND_PLACE_IT_HERE";
-        String YANDEX_PUBLIC_KEY = "PLACE_HERE_YANDEX_KEY";
+//        String base64EncodedPublicKey = "CONSTRUCT_YOUR_KEY_AND_PLACE_IT_HERE";
+//        String YANDEX_PUBLIC_KEY = "PLACE_HERE_YANDEX_KEY";
+//
+//        // Some sanity checks to see if the developer (that's you!) really followed the
+//        // instructions to run this sample (don't put these checks on your app!)
+//        if (base64EncodedPublicKey.contains("CONSTRUCT_YOUR")) {
+//            throw new RuntimeException("Please put your app's public key in MainActivity.java. See README.");
+//        }
+//        if (getPackageName().startsWith("com.example")) {
+//            throw new RuntimeException("Please change the sample's package name! See README.");
+//        }
+//        
+//        // Create the helper, passing it our context and the public key to verify signatures with
+//        Log.d(TAG, "Creating IAB helper.");
+//        Map<String, String> storeKeys = new HashMap<String, String>();
+//        storeKeys.put(OpenIabHelper.NAME_GOOGLE, base64EncodedPublicKey);
+//        storeKeys.put("com.yandex.store", YANDEX_PUBLIC_KEY);
+//
+//        mHelper = new OpenIabHelper(this, storeKeys);
 
-        // Some sanity checks to see if the developer (that's you!) really followed the
-        // instructions to run this sample (don't put these checks on your app!)
-        if (base64EncodedPublicKey.contains("CONSTRUCT_YOUR")) {
-            throw new RuntimeException("Please put your app's public key in MainActivity.java. See README.");
-        }
-        if (getPackageName().startsWith("com.example")) {
-            throw new RuntimeException("Please change the sample's package name! See README.");
-        }
-        
-        // Create the helper, passing it our context and the public key to verify signatures with
-        Log.d(TAG, "Creating IAB helper.");
-        Map<String, String> storeKeys = new HashMap<String, String>();
-        storeKeys.put(OpenIabHelper.NAME_GOOGLE, base64EncodedPublicKey);
-        storeKeys.put("com.yandex.store", YANDEX_PUBLIC_KEY);
+        Context context = this;
+        Options opts = new Options();
+        opts.storeKeys = new HashMap<String, String>();
+        opts.availableStores = new ArrayList<Appstore>();
+        opts.availableStores.add(new AmazonAppstore(context) {
+            public boolean isBillingAvailable(String packageName) {
+                return true;
+            }
+        });
+        mHelper = new OpenIabHelper(context, opts);        
 
-        mHelper = new OpenIabHelper(this, storeKeys);
         
         // enable debug logging (for a production application, you should set this to false).
         //mHelper.enableDebugLogging(true);
