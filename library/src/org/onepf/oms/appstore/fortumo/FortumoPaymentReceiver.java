@@ -13,19 +13,12 @@ public class FortumoPaymentReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        processPayment(context, intent);
+        PaymentResponse paymentResponse = new PaymentResponse(intent);
+        SharedPreferences sharedPreferences = context.getSharedPreferences(FortumoUtils.SP_FORTUMO_DEFAULT_NAME, Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putLong(FortumoUtils.SP_PAYMENT_MESSAGE_ID_PROCEED, paymentResponse.getMessageId());
+        editor.putString(FortumoUtils.SP_PAYMENT_NAME_TO_PROCEED, paymentResponse.getProductName());
+        editor.commit();
     }
 
-    public static void processPayment(Context context, PaymentResponse paymentResponse) {
-        if (paymentResponse != null) {
-            SharedPreferences sharedPreferences = context.getSharedPreferences(FortumoUtils.SP_FORTUMO_DEFAULT_NAME, Context.MODE_PRIVATE);
-            SharedPreferences.Editor editor = sharedPreferences.edit();
-            editor.putLong(FortumoUtils.SP_PAYMENT_MESSAGE_ID_PROCEED, paymentResponse.getMessageId());
-            editor.commit();
-        }
-    }
-
-    public static void processPayment(Context context, Intent intent) {
-        processPayment(context, new PaymentResponse(intent));
-    }
 }

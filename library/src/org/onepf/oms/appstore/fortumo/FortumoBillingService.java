@@ -55,14 +55,15 @@ public class FortumoBillingService implements AppstoreInAppBillingService {
                 int nonConsumablePaymentStatus = MpUtils.getNonConsumablePaymentStatus(act, FortumoUtils.getSkuName(sku), FortumoUtils.getSkuServiceId(sku), FortumoUtils.getSkuAppSecret(sku));
                 if (nonConsumablePaymentStatus == MpUtils.MESSAGE_STATUS_BILLED) {
                     listener.onIabPurchaseFinished(new IabResult(IabHelper.BILLING_RESPONSE_RESULT_ITEM_ALREADY_OWNED, "Already owned!"), null);//todo
+                    return;
                 }
-            } else {
-                PaymentRequest paymentRequest = new PaymentRequest.PaymentRequestBuilder().setService(FortumoUtils.getSkuServiceId(sku), FortumoUtils.getSkuAppSecret(sku)).
-                        setConsumable(true).
-                        setProductName(FortumoUtils.getSkuName(sku)).
-                        build();
-                FortumoUtils.startPaymentActivityForResult(act, requestCode, paymentRequest);
             }
+            PaymentRequest paymentRequest = new PaymentRequest.PaymentRequestBuilder().setService(FortumoUtils.getSkuServiceId(sku), FortumoUtils.getSkuAppSecret(sku)).
+                    setConsumable(isConsumable).
+                    setProductName(FortumoUtils.getSkuName(sku)).
+                    build();
+            FortumoUtils.startPaymentActivityForResult(act, requestCode, paymentRequest);
+
         }
     }
 
@@ -70,7 +71,6 @@ public class FortumoBillingService implements AppstoreInAppBillingService {
     public boolean handleActivityResult(int requestCode, int resultCode, Intent intent) {
         if (intent != null && resultCode == Activity.RESULT_OK) {
             PaymentResponse paymentResponse = new PaymentResponse(intent);
-            FortumoPaymentReceiver.processPayment(context, intent);
             int errorCode = IabHelper.BILLING_RESPONSE_RESULT_OK;
             String errorMsg = "";
             Purchase purchase;
@@ -111,6 +111,36 @@ public class FortumoBillingService implements AppstoreInAppBillingService {
     @Override
     public Inventory queryInventory(boolean querySkuDetails, List<String> moreItemSkus, List<String> moreSubsSkus) throws IabException {
         Inventory inventory = new Inventory();
+        SharedPreferences sharedPreferences = context.getSharedPreferences(FortumoUtils.SP_FORTUMO_DEFAULT_NAME, Context.MODE_PRIVATE);
+        long deferredMessageId = sharedPreferences.getLong(FortumoUtils.SP_PAYMENT_MESSAGE_ID_PROCEED, -1);
+        if (deferredMessageId != -1) {
+            String deferredPaymentName = sharedPreferences.getString(FortumoUtils.SP_PAYMENT_NAME_TO_PROCEED, "");
+            if (!TextUtils.isEmpty(deferredPaymentName)) {
+                PaymentResponse paymentResponse = MpUtils.getPaymentResponse(context, deferredMessageId);
+                if (paymentResponse.getBillingStatus() == MpUtils.MESSAGE_STATUS_BILLED) {
+                    List<String> allStoreSkus = OpenIabHelper.getAllStoreSkus(OpenIabHelper.NAME_FORTUMO);
+                    for (String sku : allStoreSkus) {
+                        if (FortumoUtils.getSkuName(sku).equals(deferredPaymentName)) {
+                            Purchase purchase = new Purchase(OpenIabHelper.NAME_FORTUMO);
+                            purchase.setItemType(FortumoUtils.getSkuType(sku));
+                            purchase.setPackageName(context.getPackageName());
+                            purchase.setOrderId(String.valueOf(deferredMessageId));
+                            boolean skuConsumable = FortumoUtils.getSkuConsumable(sku);
+                            if (skuConsumable) {
+                                addConsumableItem(deferredPaymentName);
+                            }
+                            inventory.addPurchase(purchase);
+                            SharedPreferences.Editor editor = sharedPreferences.edit();
+                            editor.remove(FortumoUtils.SP_PAYMENT_MESSAGE_ID_PROCEED);
+                            editor.remove(FortumoUtils.SP_PAYMENT_NAME_TO_PROCEED);
+                            editor.commit();
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
         //non-consumable skus
         List<String> allStoreSkus = OpenIabHelper.getAllStoreSkus(OpenIabHelper.NAME_FORTUMO);
         for (String sku : allStoreSkus) {
@@ -153,6 +183,7 @@ public class FortumoBillingService implements AppstoreInAppBillingService {
     }
 
 
+    //todo message id
     private void addConsumableItem(String skuName) {
         SharedPreferences sharedPreferences = context.getSharedPreferences(FortumoUtils.SP_FORTUMO_CONSUMABLE_SKUS, Context.MODE_PRIVATE);
         String consumableSkusString = sharedPreferences.getString(FortumoUtils.SP_FORTUMO_CONSUMABLE_SKUS, "");
