@@ -158,13 +158,13 @@ public class FortumoBillingService implements AppstoreInAppBillingService {
         editor.commit();
     }
 
-    private boolean consumeSkuFromPreferences(String skuName) {
+    private boolean consumeSkuFromPreferences(String openSkuName) {
         SharedPreferences sharedPreferences = context.getSharedPreferences(sharedPrefName, Context.MODE_PRIVATE);
         String consumableSkuString = sharedPreferences.getString(FortumoUtils.SP_FORTUMO_CONSUMABLE_SKUS, "");
         if (!TextUtils.isEmpty(consumableSkuString)) {
             String[] skuArray = consumableSkuString.split(",");
             List<String> list = new ArrayList<String>(Arrays.asList(skuArray));
-            boolean wasRemoved = list.remove(skuName);
+            boolean wasRemoved = list.remove(openSkuName.split(",")[3]);
             if (wasRemoved) {
                 StringBuilder stringBuilder = new StringBuilder();
                 for (int i = 0; i < list.size(); i++) {
