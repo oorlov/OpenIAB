@@ -14,9 +14,11 @@ import org.onepf.oms.OpenIabHelper;
 public class FortumoStore extends DefaultAppstore {
     private Context context;
     private FortumoBillingService billingService;
+    private String sharedPrefName;
 
-    public FortumoStore(Context context) {
+    public FortumoStore(Context context, String sharedPrefName) {
         this.context = context;
+        this.sharedPrefName = sharedPrefName;
     }
 
     @Override
@@ -42,7 +44,7 @@ public class FortumoStore extends DefaultAppstore {
     @Override
     public AppstoreInAppBillingService getInAppBillingService() {
         if (billingService == null) {
-            billingService = new FortumoBillingService(context);
+            billingService = new FortumoBillingService(context, sharedPrefName);
         }
         return billingService;
     }

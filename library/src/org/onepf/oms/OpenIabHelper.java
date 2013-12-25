@@ -34,6 +34,7 @@ import org.onepf.oms.appstore.SamsungApps;
 import org.onepf.oms.appstore.SamsungAppsBillingService;
 import org.onepf.oms.appstore.TStore;
 import org.onepf.oms.appstore.fortumo.FortumoStore;
+import org.onepf.oms.appstore.fortumo.FortumoUtils;
 import org.onepf.oms.appstore.googleUtils.IabException;
 import org.onepf.oms.appstore.googleUtils.IabHelper;
 import org.onepf.oms.appstore.googleUtils.IabHelper.OnIabPurchaseFinishedListener;
@@ -327,7 +328,7 @@ public class OpenIabHelper {
                     stores2check.add(new TStore(context, options.storeKeys.get(OpenIabHelper.NAME_TSTORE)));
                     if (options.supportFortumo) {
                         //todo write a comment
-                        stores2check.add(new FortumoStore(context));
+                        stores2check.add(new FortumoStore(context, options.forumoSharedPrefName));
                     }
                     if (getAllStoreSkus(NAME_SAMSUNG).size() > 0) {  
                         // SamsungApps shows lot of UI stuff during init 
@@ -949,6 +950,8 @@ public class OpenIabHelper {
         public int samsungCertificationRequestCode = SamsungAppsBillingService.REQUEST_CODE_IS_ACCOUNT_CERTIFICATION;
 
         public boolean supportFortumo = false;
+
+        public String forumoSharedPrefName = FortumoUtils.SP_FORTUMO_DEFAULT_NAME;
     }
 
 }
