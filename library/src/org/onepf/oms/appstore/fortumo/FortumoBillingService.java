@@ -46,24 +46,24 @@ public class FortumoBillingService implements AppstoreInAppBillingService {
 
     @Override
     public void launchPurchaseFlow(final Activity act, String sku, String itemType, int requestCode, IabHelper.OnIabPurchaseFinishedListener listener, String extraData) {
-        final String[] split = sku.split(",");
-        if (split.length != 4) {
-            throw new IllegalStateException("service id, service key, sku type and sku name must be specified!");
-        }
         this.purchaseFinishedListener = listener;
-        boolean isConsumable = Boolean.parseBoolean(split[2]);
-        if (!isConsumable) {
-            int nonConsumablePaymentStatus = MpUtils.getNonConsumablePaymentStatus(act, split[0], split[1], split[3]);
-            if (nonConsumablePaymentStatus == MpUtils.MESSAGE_STATUS_BILLED) {
-                listener.onIabPurchaseFinished(new IabResult(IabHelper.BILLING_RESPONSE_RESULT_ITEM_ALREADY_OWNED, "Already owned!"), null);//todo
-                return;
+        if (FortumoUtils.getSkuType(sku).equals(OpenIabHelper.ITEM_TYPE_SUBS)) {
+            listener.onIabPurchaseFinished(new IabResult(IabHelper.BILLING_RESPONSE_RESULT_ITEM_UNAVAILABLE, "Subscriptions are not currently supported!"), null);//todo
+        } else {
+            boolean isConsumable = FortumoUtils.getSkuConsumable(sku);
+            if (!isConsumable) {
+                int nonConsumablePaymentStatus = MpUtils.getNonConsumablePaymentStatus(act, FortumoUtils.getSkuName(sku), FortumoUtils.getSkuServiceId(sku), FortumoUtils.getSkuAppSecret(sku));
+                if (nonConsumablePaymentStatus == MpUtils.MESSAGE_STATUS_BILLED) {
+                    listener.onIabPurchaseFinished(new IabResult(IabHelper.BILLING_RESPONSE_RESULT_ITEM_ALREADY_OWNED, "Already owned!"), null);//todo
+                }
+            } else {
+                PaymentRequest paymentRequest = new PaymentRequest.PaymentRequestBuilder().setService(FortumoUtils.getSkuServiceId(sku), FortumoUtils.getSkuAppSecret(sku)).
+                        setConsumable(true).
+                        setProductName(FortumoUtils.getSkuName(sku)).
+                        build();
+                FortumoUtils.startPaymentActivityForResult(act, requestCode, paymentRequest);
             }
         }
-        PaymentRequest paymentRequest = new PaymentRequest.PaymentRequestBuilder().setService(split[0], split[1]).
-                setConsumable(isConsumable).
-                setProductName(split[3]).
-                build();
-        FortumoUtils.startPaymentActivityForResult(act, requestCode, paymentRequest);
     }
 
     @Override
@@ -89,9 +89,8 @@ public class FortumoBillingService implements AppstoreInAppBillingService {
                 //consumable or not
                 List<String> allStoreSkus = OpenIabHelper.getAllStoreSkus(OpenIabHelper.NAME_FORTUMO);
                 for (String fortumoSku : allStoreSkus) {
-                    String[] splittedSku = fortumoSku.split(",");
-                    if (splittedSku[3].equals(purchase.getSku())) {
-                        boolean consumable = Boolean.parseBoolean(splittedSku[2]);
+                    if (FortumoUtils.getSkuName(fortumoSku).equals(purchase.getSku())) {
+                        boolean consumable = FortumoUtils.getSkuConsumable(fortumoSku);
                         if (consumable) {
                             addConsumableItem(purchase.getSku());
                         }
@@ -112,24 +111,24 @@ public class FortumoBillingService implements AppstoreInAppBillingService {
     @Override
     public Inventory queryInventory(boolean querySkuDetails, List<String> moreItemSkus, List<String> moreSubsSkus) throws IabException {
         Inventory inventory = new Inventory();
-        //add non-consumable skus
+        //non-consumable skus
         List<String> allStoreSkus = OpenIabHelper.getAllStoreSkus(OpenIabHelper.NAME_FORTUMO);
         for (String sku : allStoreSkus) {
-            String[] skuDetatils = sku.split(",");
-            boolean consumable = Boolean.parseBoolean(skuDetatils[2]);
+            boolean consumable = FortumoUtils.getSkuConsumable(sku);
             if (!consumable) {
-                int nonConsumablePaymentStatus = MpUtils.getNonConsumablePaymentStatus(context, skuDetatils[0], skuDetatils[1], skuDetatils[3]);//todo change details order
+                int nonConsumablePaymentStatus = MpUtils.getNonConsumablePaymentStatus(context, FortumoUtils.getSkuServiceId(sku), FortumoUtils.getSkuAppSecret(sku),
+                        FortumoUtils.getSkuName(sku));
                 if (nonConsumablePaymentStatus == MpUtils.MESSAGE_STATUS_BILLED) {
                     Purchase purchase = new Purchase(OpenIabHelper.NAME_FORTUMO);
                     purchase.setPurchaseState(0);//todo?
                     purchase.setPackageName(context.getPackageName());
                     purchase.setItemType(IabHelper.ITEM_TYPE_INAPP);
-                    purchase.setSku(skuDetatils[3]);
+                    purchase.setSku(FortumoUtils.getSkuName(sku));
                     inventory.addPurchase(purchase);
                 }
             }
         }
-        //add consumable skus
+        //consumable skus
         String[] consumableSkus = getConsumableSkus();
         for (String consumableSku : consumableSkus) {
             Purchase purchase = new Purchase(OpenIabHelper.NAME_FORTUMO);
@@ -139,6 +138,7 @@ public class FortumoBillingService implements AppstoreInAppBillingService {
             purchase.setSku(consumableSku);
             inventory.addPurchase(purchase);
         }
+
         return inventory;
     }
 
@@ -171,7 +171,7 @@ public class FortumoBillingService implements AppstoreInAppBillingService {
         if (!TextUtils.isEmpty(consumableSkuString)) {
             String[] skuArray = consumableSkuString.split(",");
             List<String> list = new ArrayList<String>(Arrays.asList(skuArray));
-            boolean wasRemoved = list.remove(openSkuName.split(",")[3]);
+            boolean wasRemoved = list.remove(FortumoUtils.getSkuName(openSkuName));
             if (wasRemoved) {
                 StringBuilder stringBuilder = new StringBuilder();
                 for (int i = 0; i < list.size(); i++) {
