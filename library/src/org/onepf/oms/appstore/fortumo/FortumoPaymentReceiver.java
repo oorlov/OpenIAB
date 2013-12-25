@@ -10,8 +10,6 @@ import mp.PaymentResponse;
  * Created by akarimova on 23.12.13.
  */
 public class FortumoPaymentReceiver extends BroadcastReceiver {
-    public static final String SHARED_PREFS_NAME = "shared_prefs_name";
-    public static final String SP_PAYMENT_RESPONSE_TO_PROCEED = "sp_payment_response_to_proceed";
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -20,9 +18,9 @@ public class FortumoPaymentReceiver extends BroadcastReceiver {
 
     public static void processPayment(Context context, PaymentResponse paymentResponse) {
         if (paymentResponse != null) {
-            SharedPreferences sharedPreferences = context.getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE);
+            SharedPreferences sharedPreferences = context.getSharedPreferences(FortumoUtils.SP_FORTUMO_DEFAULT_NAME, Context.MODE_PRIVATE);
             SharedPreferences.Editor editor = sharedPreferences.edit();
-            editor.putLong(SP_PAYMENT_RESPONSE_TO_PROCEED, paymentResponse.getMessageId());
+            editor.putLong(FortumoUtils.SP_PAYMENT_MESSAGE_ID_PROCEED, paymentResponse.getMessageId());
             editor.commit();
         }
     }

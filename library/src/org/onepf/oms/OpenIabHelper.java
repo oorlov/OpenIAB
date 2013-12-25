@@ -306,7 +306,7 @@ public class OpenIabHelper {
      */
     public void startSetup(final IabHelper.OnIabSetupFinishedListener listener) {
         this.notifyHandler = new Handler();
-        checkOptions(options);
+        checkOptions(options, context);
         started = System.currentTimeMillis();
         new Thread(new Runnable() {
             public void run() {
@@ -328,7 +328,7 @@ public class OpenIabHelper {
                     stores2check.add(new TStore(context, options.storeKeys.get(OpenIabHelper.NAME_TSTORE)));
                     if (options.supportFortumo) {
                         //todo write a comment
-                        stores2check.add(new FortumoStore(context, options.forumoSharedPrefName));
+                        stores2check.add(new FortumoStore(context));
                     }
                     if (getAllStoreSkus(NAME_SAMSUNG).size() > 0) {  
                         // SamsungApps shows lot of UI stuff during init 
@@ -387,10 +387,10 @@ public class OpenIabHelper {
     }
 
     /** Check options are valid */
-    public static void checkOptions(Options options) {
+    public static void checkOptions(Options options, Context context) {
         if (options.verifyMode != Options.VERIFY_SKIP && options.storeKeys != null) { // check publicKeys. Must be not null and valid
             for (Entry<String, String> entry : options.storeKeys.entrySet()) {
-                if (entry.getValue() == null) { 
+                if (entry.getValue() == null) {
                     throw new IllegalArgumentException("Null publicKey for store: " + entry.getKey() + ", key: " + entry.getValue());
                 }
                 try {
@@ -400,7 +400,10 @@ public class OpenIabHelper {
                 }
             }
         }
-        
+        if (options.supportFortumo) {
+            FortumoUtils.checkFortumoSettings(context);
+        }
+
     }
 
     protected void fireSetupFinished(final IabHelper.OnIabSetupFinishedListener listener, final IabResult result) {
@@ -949,9 +952,10 @@ public class OpenIabHelper {
          * <p>default value is {@link SamsungAppsBillingService#REQUEST_CODE_IS_ACCOUNT_CERTIFICATION} */
         public int samsungCertificationRequestCode = SamsungAppsBillingService.REQUEST_CODE_IS_ACCOUNT_CERTIFICATION;
 
+        /**
+         * Flag to enable your app to work with an international mobile payment provider Fortumo
+         */
         public boolean supportFortumo = false;
-
-        public String forumoSharedPrefName = FortumoUtils.SP_FORTUMO_DEFAULT_NAME;
     }
 
 }

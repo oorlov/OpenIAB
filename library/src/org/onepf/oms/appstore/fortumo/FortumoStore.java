@@ -1,6 +1,7 @@
 package org.onepf.oms.appstore.fortumo;
 
 import android.content.Context;
+import android.content.pm.PackageManager;
 import org.onepf.oms.Appstore;
 import org.onepf.oms.AppstoreInAppBillingService;
 import org.onepf.oms.DefaultAppstore;
@@ -14,11 +15,9 @@ import org.onepf.oms.OpenIabHelper;
 public class FortumoStore extends DefaultAppstore {
     private Context context;
     private FortumoBillingService billingService;
-    private String sharedPrefName;
 
-    public FortumoStore(Context context, String sharedPrefName) {
+    public FortumoStore(Context context) {
         this.context = context;
-        this.sharedPrefName = sharedPrefName;
     }
 
     @Override
@@ -28,7 +27,9 @@ public class FortumoStore extends DefaultAppstore {
 
     @Override
     public boolean isBillingAvailable(String packageName) {
-        return OpenIabHelper.getAllStoreSkus(OpenIabHelper.NAME_FORTUMO).size() > 0;
+        PackageManager pm = context.getPackageManager();
+        return pm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY) &&
+                OpenIabHelper.getAllStoreSkus(OpenIabHelper.NAME_FORTUMO).size() > 0;
     }
 
     @Override
@@ -44,7 +45,7 @@ public class FortumoStore extends DefaultAppstore {
     @Override
     public AppstoreInAppBillingService getInAppBillingService() {
         if (billingService == null) {
-            billingService = new FortumoBillingService(context, sharedPrefName);
+            billingService = new FortumoBillingService(context);
         }
         return billingService;
     }

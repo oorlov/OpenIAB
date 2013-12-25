@@ -8,11 +8,11 @@ import android.text.TextUtils;
 import mp.MpUtils;
 import mp.PaymentRequest;
 import mp.PaymentResponse;
-import org.json.JSONArray;
 import org.onepf.oms.AppstoreInAppBillingService;
 import org.onepf.oms.OpenIabHelper;
 import org.onepf.oms.appstore.googleUtils.*;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -24,16 +24,23 @@ import java.util.List;
 public class FortumoBillingService implements AppstoreInAppBillingService {
     private Context context;
     private IabHelper.OnIabPurchaseFinishedListener purchaseFinishedListener;
-    private String sharedPrefName;
 
-    public FortumoBillingService(Context context, String sharedPrefName) {
+    public FortumoBillingService(Context context) {
         this.context = context;
-        this.sharedPrefName = sharedPrefName;
     }
 
     @Override
     public void startSetup(IabHelper.OnIabSetupFinishedListener listener) {
-        //do nothing
+        if (!MpUtils.isPaymentBroadcastEnabled(context)) {
+            try {
+                Class permissionClass = Class.forName(context.getPackageName() + ".Manifest$permission");
+                Field paymentBroadcastPermission = permissionClass.getField("PAYMENT_BROADCAST_PERMISSION");
+                String permissionString = (String) paymentBroadcastPermission.get(null);
+                MpUtils.enablePaymentBroadcast(context, permissionString);
+            } catch (Exception ignored) {
+                listener.onIabSetupFinished(new IabResult(IabHelper.BILLING_RESPONSE_RESULT_ERROR, "PAYMENT_BROADCAST_PERMISSION is not declared."));
+            }
+        }
         listener.onIabSetupFinished(new IabResult(IabHelper.BILLING_RESPONSE_RESULT_OK, "Setup successful"));
     }
 
@@ -105,7 +112,7 @@ public class FortumoBillingService implements AppstoreInAppBillingService {
     @Override
     public Inventory queryInventory(boolean querySkuDetails, List<String> moreItemSkus, List<String> moreSubsSkus) throws IabException {
         Inventory inventory = new Inventory();
-        //add all non-consumable items
+        //add non-consumable skus
         List<String> allStoreSkus = OpenIabHelper.getAllStoreSkus(OpenIabHelper.NAME_FORTUMO);
         for (String sku : allStoreSkus) {
             String[] skuDetatils = sku.split(",");
@@ -120,17 +127,17 @@ public class FortumoBillingService implements AppstoreInAppBillingService {
                     purchase.setSku(skuDetatils[3]);
                     inventory.addPurchase(purchase);
                 }
-            } else {
-                String[] consumableSkus = getConsumableSkus();
-                for (String consumableSku : consumableSkus) {
-                    Purchase purchase = new Purchase(OpenIabHelper.NAME_FORTUMO);
-                    purchase.setPurchaseState(0);//todo?
-                    purchase.setPackageName(context.getPackageName());
-                    purchase.setItemType(IabHelper.ITEM_TYPE_INAPP);
-                    purchase.setSku(consumableSku);
-                    inventory.addPurchase(purchase);
-                }
             }
+        }
+        //add consumable skus
+        String[] consumableSkus = getConsumableSkus();
+        for (String consumableSku : consumableSkus) {
+            Purchase purchase = new Purchase(OpenIabHelper.NAME_FORTUMO);
+            purchase.setPurchaseState(0);//todo?
+            purchase.setPackageName(context.getPackageName());
+            purchase.setItemType(IabHelper.ITEM_TYPE_INAPP);
+            purchase.setSku(consumableSku);
+            inventory.addPurchase(purchase);
         }
         return inventory;
     }
@@ -147,7 +154,7 @@ public class FortumoBillingService implements AppstoreInAppBillingService {
 
 
     private void addConsumableItem(String skuName) {
-        SharedPreferences sharedPreferences = context.getSharedPreferences(sharedPrefName, Context.MODE_PRIVATE);
+        SharedPreferences sharedPreferences = context.getSharedPreferences(FortumoUtils.SP_FORTUMO_CONSUMABLE_SKUS, Context.MODE_PRIVATE);
         String consumableSkusString = sharedPreferences.getString(FortumoUtils.SP_FORTUMO_CONSUMABLE_SKUS, "");
         if (consumableSkusString.length() > 0) {
             consumableSkusString += ",";
@@ -159,7 +166,7 @@ public class FortumoBillingService implements AppstoreInAppBillingService {
     }
 
     private boolean consumeSkuFromPreferences(String openSkuName) {
-        SharedPreferences sharedPreferences = context.getSharedPreferences(sharedPrefName, Context.MODE_PRIVATE);
+        SharedPreferences sharedPreferences = context.getSharedPreferences(FortumoUtils.SP_FORTUMO_CONSUMABLE_SKUS, Context.MODE_PRIVATE);
         String consumableSkuString = sharedPreferences.getString(FortumoUtils.SP_FORTUMO_CONSUMABLE_SKUS, "");
         if (!TextUtils.isEmpty(consumableSkuString)) {
             String[] skuArray = consumableSkuString.split(",");
@@ -184,7 +191,7 @@ public class FortumoBillingService implements AppstoreInAppBillingService {
     }
 
     private String[] getConsumableSkus() {
-        SharedPreferences sharedPreferences = context.getSharedPreferences(sharedPrefName, Context.MODE_PRIVATE);
+        SharedPreferences sharedPreferences = context.getSharedPreferences(FortumoUtils.SP_FORTUMO_DEFAULT_NAME, Context.MODE_PRIVATE);
         String consumableSkuString = sharedPreferences.getString(FortumoUtils.SP_FORTUMO_CONSUMABLE_SKUS, "");
         return consumableSkuString.split(",");
     }
