@@ -27,6 +27,7 @@ public class FortumoBillingService implements AppstoreInAppBillingService {
     @Override
     public void startSetup(IabHelper.OnIabSetupFinishedListener listener) {
         //do nothing
+        listener.onIabSetupFinished(new IabResult(IabHelper.BILLING_RESPONSE_RESULT_OK, "Setup successful"));
     }
 
     @Override
@@ -40,7 +41,7 @@ public class FortumoBillingService implements AppstoreInAppBillingService {
         if (!isConsumable) {
             int nonConsumablePaymentStatus = MpUtils.getNonConsumablePaymentStatus(act, split[0], split[1], split[3]);
             if (nonConsumablePaymentStatus == MpUtils.MESSAGE_STATUS_BILLED) {
-                listener.onIabPurchaseFinished(new IabResult(IabHelper.BILLING_RESPONSE_RESULT_ITEM_ALREADY_OWNED, "Already owned!"), null);
+                listener.onIabPurchaseFinished(new IabResult(IabHelper.BILLING_RESPONSE_RESULT_ITEM_ALREADY_OWNED, "Already owned!"), null);//todo
                 return;
             }
         }
@@ -83,7 +84,26 @@ public class FortumoBillingService implements AppstoreInAppBillingService {
 
     @Override
     public Inventory queryInventory(boolean querySkuDetails, List<String> moreItemSkus, List<String> moreSubsSkus) throws IabException {
-        return null;
+        Inventory inventory = new Inventory();
+        //add all non-consumable items
+        List<String> allStoreSkus = OpenIabHelper.getAllStoreSkus(OpenIabHelper.NAME_FORTUMO);
+        for (String sku : allStoreSkus) {
+            String[] skuDetatils = sku.split(",");
+            boolean consumable = Boolean.parseBoolean(skuDetatils[2]);
+            if (!consumable) {
+                int nonConsumablePaymentStatus = MpUtils.getNonConsumablePaymentStatus(context, skuDetatils[0], skuDetatils[1], skuDetatils[3]);//todo change details order
+                if (nonConsumablePaymentStatus == MpUtils.MESSAGE_STATUS_BILLED) {
+                    Purchase purchase = new Purchase(OpenIabHelper.NAME_FORTUMO);
+                    purchase.setPurchaseState(0);//todo?
+                    purchase.setPackageName(context.getPackageName());
+                    purchase.setItemType(IabHelper.ITEM_TYPE_INAPP);
+                    purchase.setSku(skuDetatils[3]);
+                    inventory.addPurchase(purchase);
+                }
+            }
+        }
+        //todo check local shared preferences for consumable skus
+        return inventory;
     }
 
     @Override

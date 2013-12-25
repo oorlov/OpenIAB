@@ -108,7 +108,7 @@ public class MainActivity extends Activity {
 //        OpenIabHelper.mapSku(SKU_PREMIUM, OpenIabHelper.NAME_TSTORE, "tstore_sku_premium");
 //        OpenIabHelper.mapSku(SKU_PREMIUM, OpenIabHelper.NAME_SAMSUNG, "100000100696/000001003746");
 //        OpenIabHelper.mapSku(SKU_PREMIUM, "com.yandex.store", "org.onepf.trivialdrive.premium");
-        OpenIabHelper.mapSku(SKU_PREMIUM, OpenIabHelper.NAME_FORTUMO, "smth,smth");
+//        OpenIabHelper.mapSku(SKU_PREMIUM, OpenIabHelper.NAME_FORTUMO, "smth,smth");
 
 //        OpenIabHelper.mapSku(SKU_GAS, OpenIabHelper.NAME_AMAZON, "org.onepf.trivialdrive.amazon.gas");
 //        OpenIabHelper.mapSku(SKU_GAS, OpenIabHelper.NAME_TSTORE, "tstore_sku_gas");
@@ -124,7 +124,7 @@ public class MainActivity extends Activity {
 //        OpenIabHelper.mapSku(SKU_INFINITE_GAS, OpenIabHelper.NAME_TSTORE, "tstore_sku_infinite_gas");
 //        OpenIabHelper.mapSku(SKU_INFINITE_GAS, OpenIabHelper.NAME_SAMSUNG, "100000100696/000001003747");
 //        OpenIabHelper.mapSku(SKU_INFINITE_GAS, "com.yandex.store", "org.onepf.trivialdrive.infinite_gas");
-        OpenIabHelper.mapSku(SKU_INFINITE_GAS, OpenIabHelper.NAME_FORTUMO, "smth2,smth2");
+//        OpenIabHelper.mapSku(SKU_INFINITE_GAS, OpenIabHelper.NAME_FORTUMO, "smth2,smth2");
     }
 
     // (arbitrary) request code for the purchase flow
