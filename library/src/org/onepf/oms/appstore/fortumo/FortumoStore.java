@@ -17,7 +17,10 @@ import java.lang.reflect.Field;
  * Created by akarimova on 23.12.13.
  */
 
-
+/**
+ * Fortumo, an international mobile payment provider, is not actually an app store.
+ * This class was made to provide in-app purchasing compatibility with other, "real", stores.
+ */
 public class FortumoStore extends DefaultAppstore {
     private Context context;
     private FortumoBillingService billingService;
@@ -28,12 +31,15 @@ public class FortumoStore extends DefaultAppstore {
 
     @Override
     public boolean isPackageInstaller(String packageName) {
+        //Fortumo is not an app. It can't be an installer.
         return false;
     }
 
     @Override
     public boolean isBillingAvailable(String packageName) {
+        //Fortumo uses sms to make payments, so telephony support is required.
         if (!context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) return false;
+        //Checks whether Fortumo-specific skus are declared.
         if (OpenIabHelper.getAllStoreSkus(OpenIabHelper.NAME_FORTUMO).isEmpty()) return false;
         return true;
     }
@@ -78,7 +84,7 @@ public class FortumoStore extends DefaultAppstore {
                     String permissionString = (String) paymentBroadcastPermission.get(null);
                     MpUtils.enablePaymentBroadcast(activity, permissionString);
                 } catch (Exception e) {
-                    throw new IllegalStateException("PAYMENT_BROADCAST_PERMISSION must be declared!\n" + e);
+                    throwFortumoNotConfiguredException("PAYMENT_BROADCAST_PERMISSION is NOT declared.");
                 }
             }
 
@@ -88,7 +94,7 @@ public class FortumoStore extends DefaultAppstore {
 
         private static void checkPermission(Context context, String paramString) {
             if (context.checkCallingOrSelfPermission(paramString) != PackageManager.PERMISSION_GRANTED)
-                throw new IllegalStateException(String.format("Required permission \"%s\" is NOT granted.", paramString));
+                throwFortumoNotConfiguredException(String.format("Required permission \"%s\" is NOT granted.", paramString));
         }
 
 
@@ -99,7 +105,8 @@ public class FortumoStore extends DefaultAppstore {
         private static String[] splitOpenSkuDescription(String openSkuDescription) {
             String[] splitArray = openSkuDescription.split(",");
             if (splitArray.length != SKU_DESC_ARRAY_LENGTH) {
-                throw new IllegalStateException("Fortumo sku description must contain 5 parts: sku name, sku type, is consumable, service id, app secret");
+                throw new IllegalStateException("Fortumo-specific sku must contain the following elements:\nSku name: YOUR_SKU_NAME,\nSku type: subs or inapp,\n" +
+                        "Consumable: true or false,\nService ID: base64 string,\nIn-application secret: base64 string");
             }
             return splitArray;
         }
@@ -132,36 +139,84 @@ public class FortumoStore extends DefaultAppstore {
             checkPermission(context, "android.permission.RECEIVE_SMS");
             checkPermission(context, "android.permission.SEND_SMS");
 
-            String appDeclaredPermission;
+            String appDeclaredPermission = null;
             try {
                 Class permissionClass = Class.forName(context.getPackageName() + ".Manifest$permission");
                 Field paymentBroadcastPermission = permissionClass.getField("PAYMENT_BROADCAST_PERMISSION");
                 appDeclaredPermission = (String) paymentBroadcastPermission.get(null);
-            } catch (Exception e) {
-                throw new IllegalStateException("PAYMENT_BROADCAST_PERMISSION must be declared!\n" + e);
+            } catch (Exception ignored) {
             }
             if (TextUtils.isEmpty(appDeclaredPermission)) {
-                throw new IllegalStateException("PAYMENT_BROADCAST_PERMISSION must be declared!");
+                throwFortumoNotConfiguredException("PAYMENT_BROADCAST_PERMISSION is NOT declared.");
             }
 
             Intent paymentActivityIntent = new Intent();
             paymentActivityIntent.setClassName(context.getPackageName(), MpActivity.class.getName());
             if (context.getPackageManager().resolveActivity(paymentActivityIntent, 0) == null) {//todo flag
-                throw new IllegalStateException("mp.MpActivity must be declared!");
+                throwFortumoNotConfiguredException("mp.MpActivity is NOT declared.");
             }
 
             Intent mpServerIntent = new Intent();
             mpServerIntent.setClassName(context.getPackageName(), MpService.class.getName());
             if (context.getPackageManager().resolveService(mpServerIntent, 0) == null) {//todo flag
-                throw new IllegalStateException("mp.MpService must be declared!");
+               throwFortumoNotConfiguredException("mp.MpService is NOT declared.");
             }
 
             Intent statusUpdateServiceIntent = new Intent();
             statusUpdateServiceIntent.setClassName(context.getPackageName(), StatusUpdateService.class.getName());
             if (context.getPackageManager().resolveService(statusUpdateServiceIntent, 0) == null) {
-                throw new IllegalStateException("mp.StatusUpdateService must be declared!");
+                throwFortumoNotConfiguredException("mp.StatusUpdateService is NOT declared.");
             }
 
         }
+    }
+
+    private static void throwFortumoNotConfiguredException(String itemDescription) {
+        throw new IllegalStateException(itemDescription + "\nTo support Fortumo your AndroidManifest.xml must contain:\n" +
+                " <!-- Permissions -->\n" +
+                "  <uses-permission android:name=\"android.permission.INTERNET\" />\n" +
+                "  <uses-permission android:name=\"android.permission.ACCESS_NETWORK_STATE\" />\n" +
+                "  <uses-permission android:name=\"android.permission.READ_PHONE_STATE\" />\n" +
+                "  <uses-permission android:name=\"android.permission.RECEIVE_SMS\" />\n" +
+                "  <uses-permission android:name=\"android.permission.SEND_SMS\" />\n" +
+                "\n" +
+                "  <!-- Define your own permission to protect payment broadcast -->\n" +
+                "  <permission android:name=\"com.your.domain.PAYMENT_BROADCAST_PERMISSION\" \n" +
+                "               android:label=\"Read payment status\" \n" +
+                "               android:protectionLevel=\"signature\" />\n" +
+                "  <!-- \"signature\" permission granted automatically by system, without notifying user. -->\n" +
+                "  <uses-permission android:name=\"com.your.domain.PAYMENT_BROADCAST_PERMISSION\" />\n" +
+                "\n" +
+                "  <application android:icon=\"@drawable/ic_launcher\" android:label=\"@string/app_name\">\n" +
+                "    <!-- Declare these objects, this is part of Fortumo SDK,\n" +
+                "    and should not be called directly -->\n" +
+                "    <receiver android:name=\"mp.MpSMSReceiver\">\n" +
+                "      <intent-filter>\n" +
+                "      <action android:name=\"android.provider.Telephony.SMS_RECEIVED\" />\n" +
+                "    </intent-filter>\n" +
+                "  </receiver>\n" +
+                "  <service android:name=\"mp.MpService\" />\n" +
+                "  <service android:name=\"mp.StatusUpdateService\" />\n" +
+                "  <activity android:name=\"mp.MpActivity\" \n" +
+                "             android:theme=\"@android:style/Theme.Translucent.NoTitleBar\"\n" +
+                "             android:configChanges=\"orientation|keyboardHidden|screenSize\" />\n" +
+                "\n" +
+                "    <!-- Implement you own BroadcastReceiver to track payment status,\n" +
+                "    should be protected by \"signature\" permission -->\n" +
+                "  <receiver android:name=\".PaymentStatusReceiver\" \n" +
+                "            android:permission=\"com.your.domain.PAYMENT_BROADCAST_PERMISSION\">\n" +
+                "    <intent-filter>\n" +
+                "      <action android:name=\"mp.info.PAYMENT_STATUS_CHANGED\" />\n" +
+                "    </intent-filter>\n" +
+                "  </receiver>\n" +
+                "\n" +
+                "  <!-- Other application objects -->\n" +
+                "  <activity android:label=\"@string/app_name\" android:name=\".YourActivity\">\n" +
+                "    <intent-filter>\n" +
+                "      <action android:name=\"android.intent.action.MAIN\" />\n" +
+                "      <category android:name=\"android.intent.category.LAUNCHER\" />\n" +
+                "    </intent-filter>\n" +
+                "  </activity>\n" +
+                "  ...");
     }
 }
