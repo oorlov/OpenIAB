@@ -14,9 +14,9 @@ public class FortumoPaymentReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         PaymentResponse paymentResponse = new PaymentResponse(intent);
-        SharedPreferences sharedPreferences = context.getSharedPreferences(FortumoStore.FortumoUtils.SHARED_PREFS_FORTUMO, Context.MODE_PRIVATE);
+        SharedPreferences sharedPreferences = context.getSharedPreferences(FortumoStore.Utils.SHARED_PREFS_FORTUMO, Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPreferences.edit();
-        editor.putLong(FortumoStore.FortumoUtils.SHARED_PREFS_PAYMENT_TO_HANDLE, paymentResponse.getMessageId());
+        editor.putLong(FortumoStore.Utils.SHARED_PREFS_PAYMENT_TO_HANDLE, paymentResponse.getMessageId());
         editor.commit();
     }
 

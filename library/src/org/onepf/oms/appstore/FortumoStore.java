@@ -65,7 +65,7 @@ public class FortumoStore extends DefaultAppstore {
     }
 
 
-    public static class FortumoUtils {
+    public static class Utils {
         private static final int SKU_DESC_ARRAY_LENGTH = 5;
         private static final int INDEX_SKU_NAME = 0;
         private static final int INDEX_SKU_TYPE = 1;
@@ -73,9 +73,9 @@ public class FortumoStore extends DefaultAppstore {
         private static final int INDEX_SKU_SERVICE_ID = 3;
         private static final int INDEX_SKU_APP_SECRET = 4;
 
-        static final String SHARED_PREFS_FORTUMO = "SHARED_PREFS_FORTUMO";
-        static final String SHARED_PREFS_FORTUMO_CONSUMABLE_SKUS = "SHARED_PREFS_FORTUMO_CONSUMABLE_SKUS";
-        static final String SHARED_PREFS_PAYMENT_TO_HANDLE = "SHARED_PREFS_PAYMENT_TO_HANDLE";
+        static final String SHARED_PREFS_FORTUMO = "shared_prefs_fortumo";
+        static final String SHARED_PREFS_FORTUMO_CONSUMABLE_SKUS = "shared_prefs_fortumo_consumable_skus";
+        static final String SHARED_PREFS_PAYMENT_TO_HANDLE = "shared_prefs_payment_to_handle";
 
         static void startPaymentActivityForResult(Activity activity, int requestCode, PaymentRequest paymentRequest) {
             if (!MpUtils.isPaymentBroadcastEnabled(activity)) {
@@ -145,6 +145,57 @@ public class FortumoStore extends DefaultAppstore {
         }
 
 
+        /**
+         * Checks for the presence of components' declarations and permissions that are required to support Fortumo billing.<br>
+         * Full Example of AndroidManifest.xml:<br>
+         * <pre>
+         * {@code
+         * <!-- Permissions -->
+         * <uses-permission android:name="android.permission.INTERNET"/>
+         * <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>"
+         * <uses-permission android:name="android.permission.READ_PHONE_STATE"/>"
+         * <uses-permission android:name="android.permission.RECEIVE_SMS"/>"
+         * <uses-permission android:name="android.permission.SEND_SMS"/>"
+         *   <!-- Define your own permission to protect payment broadcast -->
+         *   <permission android:name="com.your.domain.PAYMENT_BROADCAST_PERMISSION"
+         *                android:label="Read payment status"
+         *                android:protectionLevel="signature"/>
+         *   <!-- "signature" permission granted automatically by system, without notifying user. -->
+         *   <uses-permission android:name="com.your.domain.PAYMENT_BROADCAST_PERMISSION"/>
+         *   <application android:icon="@drawable/ic_launcher" android:label="@string/app_name">
+         * <!-- Declare these objects, this is part of Fortumo SDK,
+         * and should not be called directly -->
+         * <receiver android:name="mp.MpSMSReceiver">
+         * <intent-filter>
+         * <action android:name="android.provider.Telephony.SMS_RECEIVED" />
+         * </intent-filter>
+         * </receiver>
+         * <service android:name="mp.MpService" />
+         * <service android:name="mp.StatusUpdateService" />
+         * <activity android:name="mp.MpActivity"
+         * android:theme="@android:style/Theme.Translucent.NoTitleBar"
+         * android:configChanges="orientation|keyboardHidden|screenSize" />
+         *
+         * <!-- Declare OpenIAB BroadcastReceiver to track payment status,
+         * should be protected by "signature" permission -->
+         * <receiver android:name="org.onepf.oms.appstore.FortumoPaymentReceiver"
+         * android:permission="com.your.domain.PAYMENT_BROADCAST_PERMISSION">
+         * <intent-filter>
+         * <action android:name="mp.info.PAYMENT_STATUS_CHANGED" />
+         * </intent-filter>
+         * </receiver>
+         *
+         * <!-- Other application objects -->
+         * <activity android:label="@string/app_name" android:name=".YourActivity">
+         * <intent-filter>
+         * <action android:name="android.intent.action.MAIN" />
+         * <category android:name="android.intent.category.LAUNCHER" />
+         * </intent-filter>
+         * </activity>
+         * ...
+         * }
+         * </pre>
+         */
         public static void checkFortumoSettings(Context context) {
             checkPermission(context, "android.permission.INTERNET");
             checkPermission(context, "android.permission.ACCESS_NETWORK_STATE");
