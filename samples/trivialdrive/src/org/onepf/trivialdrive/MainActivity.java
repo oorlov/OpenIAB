@@ -33,6 +33,9 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import java.util.HashMap;
+import java.util.Map;
+
 
 /**
  * Example game using in-app billing version 3.
@@ -109,8 +112,8 @@ public class MainActivity extends Activity {
         OpenIabHelper.mapSku(SKU_PREMIUM, OpenIabHelper.NAME_TSTORE, "tstore_sku_premium");
         OpenIabHelper.mapSku(SKU_PREMIUM, OpenIabHelper.NAME_SAMSUNG, "100000100696/000001003746");
         OpenIabHelper.mapSku(SKU_PREMIUM, "com.yandex.store", "org.onepf.trivialdrive.premium");
-                OpenIabHelper.mapSku(SKU_PREMIUM, OpenIabHelper.NAME_FORTUMO,
-                        FortumoStore.FortumoUtils.makeOpenSkuDescription(SKU_PREMIUM, OpenIabHelper.ITEM_TYPE_INAPP, false, "c5729224f5c89d63c37d8fbbada50867", "6481773efc593a70ee03167b3f8813cf"));
+        OpenIabHelper.mapSku(SKU_PREMIUM, OpenIabHelper.NAME_FORTUMO,
+                FortumoStore.FortumoUtils.makeOpenSkuDescription(SKU_PREMIUM, OpenIabHelper.ITEM_TYPE_INAPP, false, "c5729224f5c89d63c37d8fbbada50867", "6481773efc593a70ee03167b3f8813cf"));
 
         OpenIabHelper.mapSku(SKU_GAS, OpenIabHelper.NAME_AMAZON, "org.onepf.trivialdrive.amazon.gas");
         OpenIabHelper.mapSku(SKU_GAS, OpenIabHelper.NAME_TSTORE, "tstore_sku_gas");
@@ -180,12 +183,13 @@ public class MainActivity extends Activity {
 //
         // Create the helper, passing it our context and the public key to verify signatures with
         Log.d(TAG, "Creating IAB helper.");
-//        Map<String, String> storeKeys = new HashMap<String, String>();
+        Map<String, String> storeKeys = new HashMap<String, String>();
 //        storeKeys.put(OpenIabHelper.NAME_GOOGLE, base64EncodedPublicKey);
 //        storeKeys.put("com.yandex.store", YANDEX_PUBLIC_KEY);
         OpenIabHelper.Options options = new OpenIabHelper.Options();
         options.verifyMode = OpenIabHelper.Options.VERIFY_EVERYTHING;
         options.supportFortumo = true;
+        options.storeKeys = storeKeys;
         mHelper = new OpenIabHelper(this, options);
 
         // enable debug logging (for a production application, you should set this to false).
@@ -229,26 +233,26 @@ public class MainActivity extends Activity {
              * verifyDeveloperPayload().
              */
 
-//            // Do we have the premium upgrade?
-//            Purchase premiumPurchase = inventory.getPurchase(SKU_PREMIUM);
-//            mIsPremium = (premiumPurchase != null && verifyDeveloperPayload(premiumPurchase));
-//            Log.d(TAG, "User is " + (mIsPremium ? "PREMIUM" : "NOT PREMIUM"));
-//
-//            // Do we have the infinite gas plan?
-//            Purchase infiniteGasPurchase = inventory.getPurchase(SKU_INFINITE_GAS);
-//            mSubscribedToInfiniteGas = (infiniteGasPurchase != null &&
-//                    verifyDeveloperPayload(infiniteGasPurchase));
-//            Log.d(TAG, "User " + (mSubscribedToInfiniteGas ? "HAS" : "DOES NOT HAVE")
-//                    + " infinite gas subscription.");
-//            if (mSubscribedToInfiniteGas) mTank = TANK_MAX;
-//
-//            // Check for gas delivery -- if we own gas, we should fill up the tank immediately
-//            Purchase gasPurchase = inventory.getPurchase(SKU_GAS);
-//            if (gasPurchase != null && verifyDeveloperPayload(gasPurchase)) {
-//                Log.d(TAG, "We have gas. Consuming it.");
-//                mHelper.consumeAsync(inventory.getPurchase(SKU_GAS), mConsumeFinishedListener);
-//                return;
-//            }
+            // Do we have the premium upgrade?
+            Purchase premiumPurchase = inventory.getPurchase(SKU_PREMIUM);
+            mIsPremium = (premiumPurchase != null && verifyDeveloperPayload(premiumPurchase));
+            Log.d(TAG, "User is " + (mIsPremium ? "PREMIUM" : "NOT PREMIUM"));
+
+            // Do we have the infinite gas plan?
+            Purchase infiniteGasPurchase = inventory.getPurchase(SKU_INFINITE_GAS);
+            mSubscribedToInfiniteGas = (infiniteGasPurchase != null &&
+                    verifyDeveloperPayload(infiniteGasPurchase));
+            Log.d(TAG, "User " + (mSubscribedToInfiniteGas ? "HAS" : "DOES NOT HAVE")
+                    + " infinite gas subscription.");
+            if (mSubscribedToInfiniteGas) mTank = TANK_MAX;
+
+            // Check for gas delivery -- if we own gas, we should fill up the tank immediately
+            Purchase gasPurchase = inventory.getPurchase(SKU_GAS);
+            if (gasPurchase != null && verifyDeveloperPayload(gasPurchase)) {
+                Log.d(TAG, "We have gas. Consuming it.");
+                mHelper.consumeAsync(inventory.getPurchase(SKU_GAS), mConsumeFinishedListener);
+                return;
+            }
 
             updateUi();
             setWaitScreen(false);
