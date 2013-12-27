@@ -10,6 +10,7 @@ import org.onepf.oms.Appstore;
 import org.onepf.oms.AppstoreInAppBillingService;
 import org.onepf.oms.DefaultAppstore;
 import org.onepf.oms.OpenIabHelper;
+import org.onepf.oms.appstore.googleUtils.IabHelper;
 
 import java.lang.reflect.Field;
 
@@ -37,7 +38,7 @@ public class FortumoStore extends DefaultAppstore {
 
     @Override
     public boolean isBillingAvailable(String packageName) {
-        //Fortumo uses sms to make payments, so telephony support is required.
+        //SMS support is required to make payments
         if (!context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) return false;
         //Checks whether Fortumo-specific skus are declared.
         if (OpenIabHelper.getAllStoreSkus(OpenIabHelper.NAME_FORTUMO).isEmpty()) return false;
@@ -99,13 +100,25 @@ public class FortumoStore extends DefaultAppstore {
 
 
         public static String makeOpenSkuDescription(String skuName, String skuType, boolean consumable, String serviceId, String appSecret) {
-            return String.format("%s,%s,%s,%s,%s", skuName, skuType, consumable, serviceId, appSecret);
+            if (skuName.trim().indexOf(',') != -1) {
+                throw new IllegalStateException("Can't create a Fortumo sku: sku name contains \',\' .");
+            }
+            if (!skuType.trim().equals(IabHelper.ITEM_TYPE_INAPP) && !skuType.trim().equals(IabHelper.ITEM_TYPE_SUBS)) {
+                throw new IllegalStateException("Can't create a Fortumo sku: unknown sky type: " + skuType);
+            }
+            if (serviceId.trim().length() % 4 != 0) {
+                throw new IllegalStateException("Can't create a Fortumo sku: service id is not base64 encoded string.");
+            }
+            if (appSecret.trim().length() % 4 != 0) {
+                throw new IllegalStateException("Can't create a Fortumo sku: app secret is not base64 encoded string.");
+            }
+            return String.format("%s,%s,%s,%s,%s", skuName.trim(), skuType.trim(), consumable, serviceId.trim(), appSecret.trim());
         }
 
         private static String[] splitOpenSkuDescription(String openSkuDescription) {
             String[] splitArray = openSkuDescription.split(",");
             if (splitArray.length != SKU_DESC_ARRAY_LENGTH) {
-                throw new IllegalStateException("Fortumo-specific sku must contain the following elements:\nSku name: YOUR_SKU_NAME,\nSku type: subs or inapp,\n" +
+                throw new IllegalStateException("Fortumo-specific sku must contain the following elements:\nSku name: string,\nSku type: subs or inapp,\n" +
                         "Consumable: true or false,\nService ID: base64 string,\nIn-application secret: base64 string");
             }
             return splitArray;
@@ -119,7 +132,7 @@ public class FortumoStore extends DefaultAppstore {
             return splitOpenSkuDescription(openSkuDescription)[INDEX_SKU_TYPE];
         }
 
-        public static boolean getSkuConsumable(String openSkuDescription) {
+        public static boolean isSkuConsumable(String openSkuDescription) {
             return Boolean.parseBoolean(splitOpenSkuDescription(openSkuDescription)[INDEX_SKU_CONSUMABLE]);
         }
 
@@ -159,7 +172,7 @@ public class FortumoStore extends DefaultAppstore {
             Intent mpServerIntent = new Intent();
             mpServerIntent.setClassName(context.getPackageName(), MpService.class.getName());
             if (context.getPackageManager().resolveService(mpServerIntent, 0) == null) {//todo flag
-               throwFortumoNotConfiguredException("mp.MpService is NOT declared.");
+                throwFortumoNotConfiguredException("mp.MpService is NOT declared.");
             }
 
             Intent statusUpdateServiceIntent = new Intent();
