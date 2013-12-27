@@ -1,6 +1,7 @@
-package org.onepf.oms.appstore.fortumo;
+package org.onepf.oms.appstore;
 
 import android.app.Activity;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -72,12 +73,11 @@ public class FortumoStore extends DefaultAppstore {
         private static final int INDEX_SKU_SERVICE_ID = 3;
         private static final int INDEX_SKU_APP_SECRET = 4;
 
-        public static final String SP_FORTUMO_DEFAULT_NAME = "SP_FORTUMO_DEFAULT_NAME";
-        public static final String SP_FORTUMO_CONSUMABLE_SKUS = "SP_FORTUMO_CONSUMABLE_SKUS";
-        public static final String SP_PAYMENT_MESSAGE_ID_PROCEED = "SP_PAYMENT_MESSAGE_ID_PROCEED";
-        public static final String SP_PAYMENT_NAME_TO_PROCEED = "SP_PAYMENT_MESSAGE_ID_PROCEED";
+        static final String SHARED_PREFS_FORTUMO = "SHARED_PREFS_FORTUMO";
+        static final String SHARED_PREFS_FORTUMO_CONSUMABLE_SKUS = "SHARED_PREFS_FORTUMO_CONSUMABLE_SKUS";
+        static final String SHARED_PREFS_PAYMENT_TO_HANDLE = "SHARED_PREFS_PAYMENT_TO_HANDLE";
 
-        public static void startPaymentActivityForResult(Activity activity, int requestCode, PaymentRequest paymentRequest) {
+        static void startPaymentActivityForResult(Activity activity, int requestCode, PaymentRequest paymentRequest) {
             if (!MpUtils.isPaymentBroadcastEnabled(activity)) {
                 try {
                     Class permissionClass = Class.forName(activity.getPackageName() + ".Manifest$permission");
@@ -181,6 +181,11 @@ public class FortumoStore extends DefaultAppstore {
                 throwFortumoNotConfiguredException("mp.StatusUpdateService is NOT declared.");
             }
 
+            try {
+                context.getPackageManager().getReceiverInfo(new ComponentName(context.getPackageName(), FortumoPaymentReceiver.class.getName()), 0);
+            } catch (PackageManager.NameNotFoundException e) {
+                throwFortumoNotConfiguredException("org.onepf.oms.appstore.FortumoPaymentReceiver is NOT declared.");
+            }
         }
     }
 
@@ -214,9 +219,9 @@ public class FortumoStore extends DefaultAppstore {
                 "             android:theme=\"@android:style/Theme.Translucent.NoTitleBar\"\n" +
                 "             android:configChanges=\"orientation|keyboardHidden|screenSize\" />\n" +
                 "\n" +
-                "    <!-- Implement you own BroadcastReceiver to track payment status,\n" +
+                "    <!-- add OpenIAB BroadcastReceiver to track payment status,\n" +
                 "    should be protected by \"signature\" permission -->\n" +
-                "  <receiver android:name=\".PaymentStatusReceiver\" \n" +
+                "  <receiver android:name=\"org.onepf.oms.appstore.FortumoPaymentReceiver\" \n" +
                 "            android:permission=\"com.your.domain.PAYMENT_BROADCAST_PERMISSION\">\n" +
                 "    <intent-filter>\n" +
                 "      <action android:name=\"mp.info.PAYMENT_STATUS_CHANGED\" />\n" +

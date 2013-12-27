@@ -1,4 +1,4 @@
-package org.onepf.oms.appstore.fortumo;
+package org.onepf.oms.appstore;
 
 import android.app.Activity;
 import android.content.Context;
@@ -65,14 +65,7 @@ public class FortumoBillingService implements AppstoreInAppBillingService {
     public boolean handleActivityResult(int requestCode, int resultCode, Intent intent) {
         if (intent == null) return false; //no data to handle
         PaymentResponse paymentResponse = new PaymentResponse(intent);
-        boolean consumable = false;
-        List<String> allStoreSkus = OpenIabHelper.getAllStoreSkus(OpenIabHelper.NAME_FORTUMO);
-        for (String fortumoSku : allStoreSkus) {
-            if (FortumoStore.FortumoUtils.getSkuName(fortumoSku).equals(paymentResponse.getProductName())) {
-                consumable = FortumoStore.FortumoUtils.isSkuConsumable(fortumoSku);
-                break;
-            }
-        }
+        boolean consumable = isItemConsumable(paymentResponse);
         Purchase purchase = purchaseFromPaymentResponse(context, paymentResponse);
         int errorCode = IabHelper.BILLING_RESPONSE_RESULT_ERROR;
         String errorMsg = "";
@@ -88,38 +81,37 @@ public class FortumoBillingService implements AppstoreInAppBillingService {
         return true;
     }
 
+    private boolean isItemConsumable(PaymentResponse paymentResponse) {
+        boolean consumable = false;
+        List<String> allStoreSkus = OpenIabHelper.getAllStoreSkus(OpenIabHelper.NAME_FORTUMO);
+        for (String fortumoSku : allStoreSkus) {
+            if (FortumoStore.FortumoUtils.getSkuName(fortumoSku).equals(paymentResponse.getProductName())) {
+                consumable = FortumoStore.FortumoUtils.isSkuConsumable(fortumoSku);
+                break;
+            }
+        }
+        return consumable;
+    }
+
     @Override
     public Inventory queryInventory(boolean querySkuDetails, List<String> moreItemSkus, List<String> moreSubsSkus) throws IabException {
         Inventory inventory = new Inventory();
-        SharedPreferences sharedPreferences = context.getSharedPreferences(FortumoStore.FortumoUtils.SP_FORTUMO_DEFAULT_NAME, Context.MODE_PRIVATE);
-        long deferredMessageId = sharedPreferences.getLong(FortumoStore.FortumoUtils.SP_PAYMENT_MESSAGE_ID_PROCEED, -1);
-        if (deferredMessageId != -1) {
-            String deferredPaymentName = sharedPreferences.getString(FortumoStore.FortumoUtils.SP_PAYMENT_NAME_TO_PROCEED, "");
-            if (!TextUtils.isEmpty(deferredPaymentName)) {
-                PaymentResponse paymentResponse = MpUtils.getPaymentResponse(context, deferredMessageId);
-                if (paymentResponse.getBillingStatus() == MpUtils.MESSAGE_STATUS_BILLED) {
-                    List<String> allStoreSkus = OpenIabHelper.getAllStoreSkus(OpenIabHelper.NAME_FORTUMO);
-                    for (String sku : allStoreSkus) {
-                        if (FortumoStore.FortumoUtils.getSkuName(sku).equals(deferredPaymentName)) {
-                            Purchase purchase = new Purchase(OpenIabHelper.NAME_FORTUMO);
-                            purchase.setItemType(FortumoStore.FortumoUtils.getSkuType(sku));
-                            purchase.setPackageName(context.getPackageName());
-                            purchase.setOrderId(paymentResponse.getPaymentCode());
-                            boolean skuConsumable = FortumoStore.FortumoUtils.isSkuConsumable(sku);
-                            if (skuConsumable) {
-                                addConsumableItem(purchase);
-                            }
-                            inventory.addPurchase(purchase);
-                            SharedPreferences.Editor editor = sharedPreferences.edit();
-                            editor.remove(FortumoStore.FortumoUtils.SP_PAYMENT_MESSAGE_ID_PROCEED);
-                            editor.remove(FortumoStore.FortumoUtils.SP_PAYMENT_NAME_TO_PROCEED);
-                            editor.commit();
-                            break;
-                        }
-                    }
+        SharedPreferences sharedPreferences = context.getSharedPreferences(FortumoStore.FortumoUtils.SHARED_PREFS_FORTUMO, Context.MODE_PRIVATE);
+        //check delayed payment results
+        long messageId = sharedPreferences.getLong(FortumoStore.FortumoUtils.SHARED_PREFS_PAYMENT_TO_HANDLE, -1);
+        if (messageId != -1) {
+            PaymentResponse paymentResponse = MpUtils.getPaymentResponse(context, messageId);
+            if (paymentResponse != null) {
+                Purchase purchase = purchaseFromPaymentResponse(context, paymentResponse);
+                if (isItemConsumable(paymentResponse)) {
+                    addConsumableItem(purchase);
                 }
+                SharedPreferences.Editor editor = sharedPreferences.edit();
+                editor.remove(FortumoStore.FortumoUtils.SHARED_PREFS_PAYMENT_TO_HANDLE);
+                editor.commit();
             }
         }
+
         //Getting non-consumable purchased items from Fortumo.
         List<String> allFortumoSkus = OpenIabHelper.getAllStoreSkus(OpenIabHelper.NAME_FORTUMO);
         for (String sku : allFortumoSkus) {
@@ -164,8 +156,8 @@ public class FortumoBillingService implements AppstoreInAppBillingService {
 
 
     private void addConsumableItem(Purchase purchase) {
-        SharedPreferences sharedPreferences = context.getSharedPreferences(FortumoStore.FortumoUtils.SP_FORTUMO_CONSUMABLE_SKUS, Context.MODE_PRIVATE);
-        String consumableSkusString = sharedPreferences.getString(FortumoStore.FortumoUtils.SP_FORTUMO_CONSUMABLE_SKUS, "");
+        SharedPreferences sharedPreferences = context.getSharedPreferences(FortumoStore.FortumoUtils.SHARED_PREFS_FORTUMO_CONSUMABLE_SKUS, Context.MODE_PRIVATE);
+        String consumableSkusString = sharedPreferences.getString(FortumoStore.FortumoUtils.SHARED_PREFS_FORTUMO_CONSUMABLE_SKUS, "");
         try {
             JSONArray consumablePurchases;
             if (TextUtils.isEmpty(consumableSkusString)) {
@@ -189,7 +181,7 @@ public class FortumoBillingService implements AppstoreInAppBillingService {
                 purchasedObject.put("order_id", purchase.getOrderId());
                 consumablePurchases.put(purchasedObject);
                 SharedPreferences.Editor editor = sharedPreferences.edit();
-                editor.putString(FortumoStore.FortumoUtils.SP_FORTUMO_CONSUMABLE_SKUS, consumablePurchases.toString());
+                editor.putString(FortumoStore.FortumoUtils.SHARED_PREFS_FORTUMO_CONSUMABLE_SKUS, consumablePurchases.toString());
                 editor.commit();
             }
 
@@ -199,8 +191,8 @@ public class FortumoBillingService implements AppstoreInAppBillingService {
     }
 
     private void consumeSkuFromPreferences(Purchase purchase) throws JSONException {
-        SharedPreferences sharedPreferences = context.getSharedPreferences(FortumoStore.FortumoUtils.SP_FORTUMO_CONSUMABLE_SKUS, Context.MODE_PRIVATE);
-        String consumableSkuString = sharedPreferences.getString(FortumoStore.FortumoUtils.SP_FORTUMO_CONSUMABLE_SKUS, "");
+        SharedPreferences sharedPreferences = context.getSharedPreferences(FortumoStore.FortumoUtils.SHARED_PREFS_FORTUMO_CONSUMABLE_SKUS, Context.MODE_PRIVATE);
+        String consumableSkuString = sharedPreferences.getString(FortumoStore.FortumoUtils.SHARED_PREFS_FORTUMO_CONSUMABLE_SKUS, "");
         if (!TextUtils.isEmpty(consumableSkuString)) {
             JSONArray jsonArray = new JSONArray(consumableSkuString);
             int indexToRemove = -1;
@@ -220,8 +212,8 @@ public class FortumoBillingService implements AppstoreInAppBillingService {
 
     private ArrayList<Purchase> getConsumableSkus() {
         ArrayList<Purchase> purchases = new ArrayList<Purchase>();
-        SharedPreferences sharedPreferences = context.getSharedPreferences(FortumoStore.FortumoUtils.SP_FORTUMO_DEFAULT_NAME, Context.MODE_PRIVATE);
-        String consumableSkuString = sharedPreferences.getString(FortumoStore.FortumoUtils.SP_FORTUMO_CONSUMABLE_SKUS, "");
+        SharedPreferences sharedPreferences = context.getSharedPreferences(FortumoStore.FortumoUtils.SHARED_PREFS_FORTUMO, Context.MODE_PRIVATE);
+        String consumableSkuString = sharedPreferences.getString(FortumoStore.FortumoUtils.SHARED_PREFS_FORTUMO_CONSUMABLE_SKUS, "");
         try {
             JSONArray jsonArray;
             if (TextUtils.isEmpty(consumableSkuString)) {
