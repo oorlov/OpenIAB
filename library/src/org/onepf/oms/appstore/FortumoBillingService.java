@@ -97,7 +97,7 @@ public class FortumoBillingService implements AppstoreInAppBillingService {
     public Inventory queryInventory(boolean querySkuDetails, List<String> moreItemSkus, List<String> moreSubsSkus) throws IabException {
         Inventory inventory = new Inventory();
         SharedPreferences sharedPreferences = context.getSharedPreferences(FortumoStore.Utils.SHARED_PREFS_FORTUMO, Context.MODE_PRIVATE);
-        //check delayed payment results
+        //check queued payment result
         long messageId = sharedPreferences.getLong(FortumoStore.Utils.SHARED_PREFS_PAYMENT_TO_HANDLE, -1);
         if (messageId != -1) {
             PaymentResponse paymentResponse = MpUtils.getPaymentResponse(context, messageId);
@@ -209,11 +209,14 @@ public class FortumoBillingService implements AppstoreInAppBillingService {
                 }
             }
             if (indexToRemove >= 0) {
-                JSONUtils.remove(indexToRemove, jsonArray);
+                JSONUtils.removeElementByIndex(indexToRemove, jsonArray);
             }
         }
     }
 
+    /**
+     * Returns consumable purchases from shared preferences
+     */
     private ArrayList<Purchase> getConsumableSkus() {
         ArrayList<Purchase> purchases = new ArrayList<Purchase>();
         SharedPreferences sharedPreferences = context.getSharedPreferences(FortumoStore.Utils.SHARED_PREFS_FORTUMO, Context.MODE_PRIVATE);
@@ -242,7 +245,6 @@ public class FortumoBillingService implements AppstoreInAppBillingService {
         String openFortumoSku = OpenIabHelper.getStoreSku(OpenIabHelper.NAME_FORTUMO, paymentResponse.getProductName());
         purchase.setItemType(FortumoStore.Utils.getSkuType(openFortumoSku));
         purchase.setOrderId(paymentResponse.getPaymentCode());
-        purchase.setPurchaseState(0);
         Date date = paymentResponse.getDate();
         if (date != null) {
             purchase.setPurchaseTime(date.getTime());
@@ -254,16 +256,15 @@ public class FortumoBillingService implements AppstoreInAppBillingService {
         Purchase purchase = new Purchase(OpenIabHelper.NAME_FORTUMO);
         purchase.setSku(object.getString("sku"));
         purchase.setOrderId(object.getString("order_id"));
-        purchase.setPurchaseState(0);//todo?
         purchase.setPackageName(context.getPackageName());
-        purchase.setItemType(IabHelper.ITEM_TYPE_INAPP); //todo set type from skus
-
+        String fortumoSku = OpenIabHelper.getStoreSku(OpenIabHelper.NAME_FORTUMO, object.getString("sku"));
+        purchase.setItemType(FortumoStore.Utils.getSkuType(fortumoSku));
         return purchase;
     }
 
     private static class JSONUtils {
 
-        public static List<JSONObject> asList(final JSONArray jsonArray) {
+        public static List<JSONObject> jsonArrayAsList(final JSONArray jsonArray) {
             final int len = jsonArray.length();
             final ArrayList<JSONObject> result = new ArrayList<JSONObject>(len);
             for (int i = 0; i < len; i++) {
@@ -275,15 +276,14 @@ public class FortumoBillingService implements AppstoreInAppBillingService {
             return result;
         }
 
-        public static JSONArray remove(final int idx, final JSONArray from) {
-            final List<JSONObject> objs = asList(from);
-            objs.remove(idx);
-
-            final JSONArray ja = new JSONArray();
-            for (final JSONObject obj : objs) {
-                ja.put(obj);
+        public static JSONArray removeElementByIndex(final int idx, final JSONArray from) {
+            final List<JSONObject> jsonObjects = jsonArrayAsList(from);
+            jsonObjects.remove(idx);
+            final JSONArray resultedArray = new JSONArray();
+            for (final JSONObject obj : jsonObjects) {
+                resultedArray.put(obj);
             }
-            return ja;
+            return resultedArray;
         }
     }
 

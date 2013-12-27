@@ -400,7 +400,7 @@ public class OpenIabHelper {
             }
         }
         if (options.supportFortumo) {
-            FortumoStore.Utils.checkFortumoSettings(context);
+            FortumoStore.Utils.checkManifestForFortumoComponents(context);
         }
 
     }

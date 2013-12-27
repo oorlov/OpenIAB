@@ -146,7 +146,7 @@ public class FortumoStore extends DefaultAppstore {
 
 
         /**
-         * Checks for the presence of components' declarations and permissions that are required to support Fortumo billing.<br>
+         * Checks for the presence of permissions and components' declarations that are required to support Fortumo billing.<br>
          * Full Example of AndroidManifest.xml:<br>
          * <pre>
          * {@code
@@ -196,7 +196,7 @@ public class FortumoStore extends DefaultAppstore {
          * }
          * </pre>
          */
-        public static void checkFortumoSettings(Context context) {
+        public static void checkManifestForFortumoComponents(Context context) {
             checkPermission(context, "android.permission.INTERNET");
             checkPermission(context, "android.permission.ACCESS_NETWORK_STATE");
             checkPermission(context, "android.permission.READ_PHONE_STATE");
