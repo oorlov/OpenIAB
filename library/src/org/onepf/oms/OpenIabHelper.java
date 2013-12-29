@@ -326,7 +326,6 @@ public class OpenIabHelper {
                     stores2check.add(new AmazonAppstore(context));
                     stores2check.add(new TStore(context, options.storeKeys.get(OpenIabHelper.NAME_TSTORE)));
                     if (options.supportFortumo) {
-                        //todo write a comment
                         stores2check.add(new FortumoStore(context));
                     }
                     if (getAllStoreSkus(NAME_SAMSUNG).size() > 0) {  
@@ -400,7 +399,12 @@ public class OpenIabHelper {
             }
         }
         if (options.supportFortumo) {
-            FortumoStore.Utils.checkManifestForFortumoComponents(context);
+            try {
+                OpenIabHelper.class.getClassLoader().loadClass("mp.MpUtils");
+            } catch (ClassNotFoundException e) {
+                throw new IllegalStateException("Can't load Fortumo SDK classes.");
+            }
+            FortumoStore.checkManifest(context);
         }
 
     }
