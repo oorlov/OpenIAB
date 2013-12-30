@@ -17,6 +17,7 @@
 package org.onepf.oms.appstore.tstoreUtils;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -46,9 +47,7 @@ public class CommandRequest {
             this.appid = appid;
             this.action = null;
             if (pids != null) {
-                for (String arg : pids) {
-                    this.product_id.add(arg);
-                }
+                Collections.addAll(this.product_id, pids);
             }
 
         }
