@@ -66,7 +66,7 @@ public final class ParamsBuilder {
 
     @Override
     public String toString() {
-        StringBuffer result = new StringBuffer();
+        StringBuilder result = new StringBuilder();
         for (ConcurrentHashMap.Entry<String, String> entry : mParams.entrySet()) {
             if (result.length() > 0)
                 result.append("&");

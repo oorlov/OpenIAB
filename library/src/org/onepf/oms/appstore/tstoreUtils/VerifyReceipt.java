@@ -57,7 +57,7 @@ public class VerifyReceipt {
 
     @Override
     public String toString() {
-        StringBuffer b = new StringBuffer("[VerifyReceipt]\n");
+        StringBuilder b = new StringBuilder("[VerifyReceipt]\n");
         b.append("status:" + status + "\n")
                 .append("detail:" + detail + "\n")
                 .append("message:" + message + "\n")
