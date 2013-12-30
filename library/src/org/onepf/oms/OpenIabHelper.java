@@ -172,7 +172,7 @@ public class OpenIabHelper {
                 storeSku2skuMappings.put(storeName, storeSkuMap);
             }
             if (storeSkuMap.get(storeSku) != null) {
-                throw new IllegalArgumentException("Ambigous SKU mapping. You try to map sku: " + sku + " -> storeSku: " + storeSku + ", that is already mapped to sku: " + storeSkuMap.get(storeSku));
+                throw new IllegalArgumentException("Ambiguous SKU mapping. You try to map sku: " + sku + " -> storeSku: " + storeSku + ", that is already mapped to sku: " + storeSkuMap.get(storeSku));
             }
             skuMap.put(sku, storeSku);
             storeSkuMap.put(storeSku, sku);
@@ -631,13 +631,16 @@ public class OpenIabHelper {
 
     public void launchPurchaseFlow(Activity act, String sku, String itemType, int requestCode,
                                    IabHelper.OnIabPurchaseFinishedListener listener, String extraData) {
+        mRequestCode = requestCode;
         checkSetupDone("launchPurchaseFlow");
         String storeSku = getStoreSku(mAppstore.getAppstoreName(), sku);
         mAppstoreBillingService.launchPurchaseFlow(act, storeSku, itemType, requestCode, listener, extraData);
     }
 
     public boolean handleActivityResult(int requestCode, int resultCode, Intent data) {
-        if (mDebugLog) Log.d(TAG, in() + " " + "handleActivityResult() requestCode: " + requestCode+ " resultCode: " + resultCode+ " data: " + data);
+        if (mDebugLog)
+            Log.d(TAG, in() + " " + "handleActivityResult() requestCode: " + requestCode + " resultCode: " + resultCode + " data: " + data);
+        if (mRequestCode != requestCode) return false;
         if (requestCode == options.samsungCertificationRequestCode && samsungInSetup != null) {
             return samsungInSetup.getInAppBillingService().handleActivityResult(requestCode, resultCode, data);
         }
