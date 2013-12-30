@@ -106,11 +106,11 @@ public class FortumoStore extends DefaultAppstore {
         if (!skuType.trim().equals(IabHelper.ITEM_TYPE_INAPP) && !skuType.trim().equals(IabHelper.ITEM_TYPE_SUBS)) {
             throw new IllegalStateException("Can't create a Fortumo SKU: unknown SKU type: " + skuType);
         }
-        if (serviceId.trim().length() % 4 != 0) {
-            throw new IllegalStateException("Can't create a Fortumo SKU: service id is not base64 encoded string.");
+        if (TextUtils.isEmpty(serviceId)) {
+            throw new IllegalStateException("Can't create a Fortumo SKU: service id is empty.");
         }
-        if (appSecret.trim().length() % 4 != 0) {
-            throw new IllegalStateException("Can't create a Fortumo SKU: app secret is not base64 encoded string.");
+        if (TextUtils.isEmpty(appSecret)) {
+            throw new IllegalStateException("Can't create a Fortumo SKU: app secret is empty.");
         }
         return String.format("%s,%s,%s,%s,%s", skuName.trim(), skuType.trim(), consumable, serviceId.trim(), appSecret.trim());
     }
@@ -119,7 +119,7 @@ public class FortumoStore extends DefaultAppstore {
         String[] splitArray = openSkuDescription.split(",");
         if (splitArray.length != SKU_DESC_ARRAY_LENGTH) {
             throw new IllegalStateException("Fortumo-specific SKU must contain the following elements:\nSKU name: string,\nSKU type: subs or inapp,\n" +
-                    "Consumable: true or false,\nService ID: base64 string,\nIn-application secret: base64 string");
+                    "Consumable: true or false,\nService ID: string,\nIn-application secret: string");
         }
         return splitArray;
     }

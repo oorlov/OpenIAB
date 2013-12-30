@@ -113,22 +113,22 @@ public class MainActivity extends Activity {
         OpenIabHelper.mapSku(SKU_PREMIUM, OpenIabHelper.NAME_SAMSUNG, "100000100696/000001003746");
         OpenIabHelper.mapSku(SKU_PREMIUM, "com.yandex.store", "org.onepf.trivialdrive.premium");
         OpenIabHelper.mapSku(SKU_PREMIUM, OpenIabHelper.NAME_FORTUMO,
-                FortumoStore.sku(SKU_PREMIUM, OpenIabHelper.ITEM_TYPE_INAPP, false, "base64string", "base64string"));
+                FortumoStore.sku(SKU_PREMIUM, OpenIabHelper.ITEM_TYPE_INAPP, false, "string", "string"));
 
         OpenIabHelper.mapSku(SKU_GAS, OpenIabHelper.NAME_AMAZON, "org.onepf.trivialdrive.amazon.gas");
         OpenIabHelper.mapSku(SKU_GAS, OpenIabHelper.NAME_TSTORE, "tstore_sku_gas");
         OpenIabHelper.mapSku(SKU_GAS, OpenIabHelper.NAME_SAMSUNG, "100000100696/000001003744");
         OpenIabHelper.mapSku(SKU_GAS, "com.yandex.store", "org.onepf.trivialdrive.gas");
-        OpenIabHelper.mapSku(SKU_GAS, OpenIabHelper.NAME_FORTUMO, FortumoStore.sku(SKU_GAS, OpenIabHelper.ITEM_TYPE_INAPP, true, "base64string",
-                "base64string"));
+        OpenIabHelper.mapSku(SKU_GAS, OpenIabHelper.NAME_FORTUMO, FortumoStore.sku(SKU_GAS, OpenIabHelper.ITEM_TYPE_INAPP, true, "string",
+                "string"));
 
         OpenIabHelper.mapSku(SKU_INFINITE_GAS, OpenIabHelper.NAME_AMAZON, "org.onepf.trivialdrive.amazon.infinite_gas");
         OpenIabHelper.mapSku(SKU_INFINITE_GAS, OpenIabHelper.NAME_TSTORE, "tstore_sku_infinite_gas");
         OpenIabHelper.mapSku(SKU_INFINITE_GAS, OpenIabHelper.NAME_SAMSUNG, "100000100696/000001003747");
         OpenIabHelper.mapSku(SKU_INFINITE_GAS, "com.yandex.store", "org.onepf.trivialdrive.infinite_gas");
         //Fortumo doesn't support subscriptions for most countries. Added this sku  just to check.
-        OpenIabHelper.mapSku(SKU_INFINITE_GAS, OpenIabHelper.NAME_FORTUMO, FortumoStore.sku(SKU_INFINITE_GAS, OpenIabHelper.ITEM_TYPE_SUBS, true, "base64string",
-                "base64string"));
+        OpenIabHelper.mapSku(SKU_INFINITE_GAS, OpenIabHelper.NAME_FORTUMO, FortumoStore.sku(SKU_INFINITE_GAS, OpenIabHelper.ITEM_TYPE_SUBS, true, "string",
+                "string"));
     }
 
     // (arbitrary) request code for the purchase flow
