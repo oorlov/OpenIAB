@@ -243,7 +243,9 @@ public class FortumoBillingService implements AppstoreInAppBillingService {
                 purchases.add(convertJsonToPurchase(context, object));
             }
         } catch (JSONException e) {
-            e.printStackTrace();
+            SharedPreferences.Editor edit = sharedPreferences.edit();
+            edit.remove(FortumoStore.SHARED_PREFS_FORTUMO_CONSUMABLE_SKUS);
+            edit.commit();
         }
         return purchases;
     }
