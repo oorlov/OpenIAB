@@ -124,11 +124,12 @@ public class OpenIabHelper {
     public static final int BILLING_RESPONSE_RESULT_OK = 0;
     public static final int BILLING_RESPONSE_RESULT_BILLING_UNAVAILABLE = 3;
     public static final int BILLING_RESPONSE_RESULT_ERROR = 6;
-        
-    public static final String NAME_GOOGLE = "com.google.play";
+
     public static final String NAME_AMAZON = "com.amazon.apps";
-    public static final String NAME_TSTORE = "com.tmobile.store";
+    public static final String NAME_GOOGLE = "com.google.play";
     public static final String NAME_SAMSUNG = "com.samsung.apps";
+    public static final String NAME_TSTORE = "com.tmobile.store";
+    public static final String NAME_YANDEX = "com.yandex.store";
 
     /** 
      * NOTE: used as sync object in related methods<br>
