@@ -104,7 +104,7 @@ public class OpenIabHelper {
     
     // Is an asynchronous operation in progress?
     // (only one at a time can be in progress)
-    private boolean mAsyncInProgress = false;
+    private boolean mAsyncInProgress;
 
     // (for logging/debugging)
     // if mAsyncInProgress == true, what asynchronous operation is in progress?
@@ -317,7 +317,7 @@ public class OpenIabHelper {
                     if (options.verifyMode == Options.VERIFY_EVERYTHING && !options.storeKeys.containsKey(NAME_GOOGLE)) {
                         // don't work with GooglePlay if verifyMode is strict and no publicKey provided 
                     } else {
-                        final String publicKey = options.verifyMode == Options.VERIFY_SKIP ? null 
+                        final String publicKey = options.verifyMode == Options.VERIFY_SKIP ? null
                                 : options.storeKeys.get(OpenIabHelper.NAME_GOOGLE);
                         stores2check.add(new GooglePlay(context, publicKey));
                     }
