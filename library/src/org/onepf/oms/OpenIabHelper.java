@@ -81,7 +81,7 @@ public class OpenIabHelper {
     
     private final Context context;
     
-    private Handler notifyHandler = null;
+    private Handler notifyHandler;
     
     /** selected appstore */
     private Appstore mAppstore;
@@ -92,7 +92,7 @@ public class OpenIabHelper {
     private final Options options;
 
     // Is setup done?
-    private boolean mSetupDone = false;
+    private boolean mSetupDone;
     
     /** SamsungApps requires {@link #handleActivityResult(int, int, Intent)} but it doesn't 
      *  work until setup is completed. */
