@@ -94,7 +94,7 @@ public class Purchase implements Cloneable {
         mSignature = signature;
     }
 
-    public Object clone() {
+    public Object clone(){
         try {
             return super.clone();
         } catch (CloneNotSupportedException e) {

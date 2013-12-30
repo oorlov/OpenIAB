@@ -25,9 +25,9 @@ import android.content.Context;
 import android.util.Log;
 
 /**
- * Analize whether app is installed from Amazon Appstore.
+ * Analyze whether app is installed from Amazon Appstore.
  * <p>
- * Uses {@link #hasAmazonClasses()} to determine it techically
+ * Uses {@link #hasAmazonClasses()} to determine it technically
  * 
  * @author Oleg Orlov
  * @since 16.04.13

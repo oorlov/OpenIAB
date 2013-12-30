@@ -41,16 +41,7 @@ public class VerifyReceipt {
 
         @Override
         public String toString() {
-            StringBuffer b = new StringBuffer();
-            b.append("log_time:" + log_time + "\n")
-                    .append("appid:" + appid + "\n")
-                    .append("product_id:" + product_id + "\n")
-                    .append("charge_amount:" + charge_amount + "\n")
-                    .append("tid:" + tid + "\n")
-                    .append("detail_pname:" + detail_pname + "\n")
-                    .append("bp_info:" + bp_info + "\n")
-                    .append("tcash_flag:" + tcash_flag + "\n");
-            return b.toString();
+            return ("log_time:" + log_time + "\n") + "appid:" + appid + "\n" + "product_id:" + product_id + "\n" + "charge_amount:" + charge_amount + "\n" + "tid:" + tid + "\n" + "detail_pname:" + detail_pname + "\n" + "bp_info:" + bp_info + "\n" + "tcash_flag:" + tcash_flag + "\n";
         }
 
     }
@@ -58,14 +49,10 @@ public class VerifyReceipt {
     @Override
     public String toString() {
         StringBuilder b = new StringBuilder("[VerifyReceipt]\n");
-        b.append("status:" + status + "\n")
-                .append("detail:" + detail + "\n")
-                .append("message:" + message + "\n")
-                .append("count:" + count + "\n");
-
+        b.append("status:").append(status).append("\n").append("detail:").append(detail).append("\n").append("message:").append(message).append("\n").append("count:").append(count).append("\n");
         if (this.product != null) {
             for (Product p : this.product) {
-                b.append("{prodcut}\n").append(p.toString()).append("\n");
+                b.append("{product}\n").append(p.toString()).append("\n");
             }
         }
         return b.toString();

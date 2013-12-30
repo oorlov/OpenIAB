@@ -43,9 +43,9 @@ public class OpenAppstore extends DefaultAppstore {
     private static final boolean mDebugLog = false;
     private static final String TAG = OpenAppstore.class.getSimpleName();
     
-    private Context context;
-    private ServiceConnection serviceConn;
-    private IOpenAppstore openAppstoreService;
+    private final Context context;
+    private final ServiceConnection serviceConn;
+    private final IOpenAppstore openAppstoreService;
     private AppstoreInAppBillingService mBillingService;
     
     /** id of OpenStore */

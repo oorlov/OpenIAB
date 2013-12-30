@@ -135,8 +135,8 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
 
     public boolean mIsBind = false;
     private IAPConnector mIapConnector = null;
-    private Context mContext;
-    private Options options;
+    private final Context mContext;
+    private final Options options;
     private ServiceConnection mServiceConnection;
     private String mPurchasingItemType;
 

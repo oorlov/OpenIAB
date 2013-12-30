@@ -33,7 +33,7 @@ import android.content.Context;
 public class TStore extends DefaultAppstore {
     private final Context mContext;
     private TStoreBillingService mBillingService;
-    private String mAppId;
+    private final String mAppId;
 
     public TStore(Context context, String appId) {
         mContext = context;

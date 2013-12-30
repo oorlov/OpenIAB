@@ -57,9 +57,7 @@ public class CommandRequest {
             this.appid = appid;
             this.action = action;
             if (pids != null) {
-                for (String arg : pids) {
-                    this.product_id.add(arg);
-                }
+                Collections.addAll(this.product_id, pids);
             }
         }
 

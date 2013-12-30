@@ -64,13 +64,11 @@ public class Response {
         }
 
         public String toString() {
-            StringBuffer b = new StringBuffer();
-            b.append("message:" + this.message + "\n")
-                    .append("code:" + this.code + "\n")
-                    .append("count:" + this.count + "\n");
+            StringBuilder b = new StringBuilder();
+            b.append("message:").append(this.message).append("\n").append("code:").append(this.code).append("\n").append("count:").append(this.count).append("\n");
             if (this.product != null) {
                 for (Product p : this.product) {
-                    b.append("{prodcut}\n").append(p.toString()).append("\n");
+                    b.append("{product}\n").append(p.toString()).append("\n");
                 }
             }
             return b.toString();
@@ -92,19 +90,10 @@ public class Response {
 
         @Override
         public String toString() {
-            StringBuffer b = new StringBuffer();
-            b.append("id:" + id + "\n")
-                    .append("name:" + name + "\n")
-                    .append("appid:" + appid + "\n")
-                    .append("type:" + type + "\n")
-                    .append("kind:" + kind + "\n")
-                    .append("validity:" + validity + "\n")
-                    .append("price:" + price + "\n")
-                    .append("startDate:" + startDate + "\n")
-                    .append("endDate:" + endDate + "\n")
-                    .append("purchasability:" + purchasability + "\n");
+            StringBuilder b = new StringBuilder();
+            b.append("id:").append(id).append("\n").append("name:").append(name).append("\n").append("appid:").append(appid).append("\n").append("type:").append(type).append("\n").append("kind:").append(kind).append("\n").append("validity:").append(validity).append("\n").append("price:").append(price).append("\n").append("startDate:").append(startDate).append("\n").append("endDate:").append(endDate).append("\n").append("purchasability:").append(purchasability).append("\n");
             if (status != null) {
-                b.append("{status}\n" + status.toString() + "\n");
+                b.append("{status}\n").append(status.toString()).append("\n");
             }
             return b.toString();
         }
@@ -121,21 +110,13 @@ public class Response {
 
         @Override
         public String toString() {
-            StringBuffer b = new StringBuffer();
-            b.append("code:" + code + "\n").append("message:" + message + "\n");
-            return b.toString();
+            return "code:" + code + "\n" + "message:" + message + "\n";
         }
     }
 
     @Override
     public String toString() {
-        StringBuffer b = new StringBuffer("[Response]\n");
-        b.append("api_version:" + api_version + "\n")
-                .append("identifier:" + identifier + "\n")
-                .append("method:" + method + "\n")
-                .append("{result}\n").append(result.toString());
-
-        return b.toString();
+        return "[Response]\n" + "api_version:" + api_version + "\n" + "identifier:" + identifier + "\n" + "method:" + method + "\n" + "{result}\n" + result.toString();
     }
 
 }

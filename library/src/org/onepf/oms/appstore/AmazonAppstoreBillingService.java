@@ -58,7 +58,7 @@ public class AmazonAppstoreBillingService extends BasePurchasingObserver impleme
     private static final boolean mDebugLog = false;
     private static final String TAG = AmazonAppstoreBillingService.class.getSimpleName();
     
-    private Map<String, IabHelper.OnIabPurchaseFinishedListener> mRequestListeners = new HashMap<String, IabHelper.OnIabPurchaseFinishedListener>();
+    private final Map<String, IabHelper.OnIabPurchaseFinishedListener> mRequestListeners = new HashMap<String, IabHelper.OnIabPurchaseFinishedListener>();
     
     /** Only for verification all requests are for the same users */
     private String currentUserId;
@@ -234,7 +234,6 @@ public class AmazonAppstoreBillingService extends BasePurchasingObserver impleme
                 return;
         }
         inventoryLatch.countDown();
-        return;
     }
 
     @Override

@@ -58,8 +58,8 @@ public class SamsungApps extends DefaultAppstore {
     public static final String IAP_SERVICE_NAME = "com.sec.android.iap.service.iapService";
 
     private AppstoreInAppBillingService mBillingService;
-    private Context context;
-    private Options options;
+    private final Context context;
+    private final Options options;
 
     // isDebugMode = true -> always returns Samsung Apps is installer
     static final boolean isDebugMode = false;
