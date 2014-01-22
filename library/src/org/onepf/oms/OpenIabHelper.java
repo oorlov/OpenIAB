@@ -431,6 +431,7 @@ public class OpenIabHelper {
             String name = info.serviceInfo.name;
             Intent intentAppstore = new Intent(intentAppstoreServices);
             intentAppstore.setClassName(packageName, name);
+            try {
             context.bindService(intentAppstore, new ServiceConnection() {
                 @Override
                 public void onServiceConnected(ComponentName name, IBinder service) {
@@ -444,7 +445,7 @@ public class OpenIabHelper {
                             Log.e(TAG, "discoverOpenStores() Appstore doesn't have name. Skipped. ComponentName: " + name);
                         } else if (billingIntent == null) { // don't handle stores without billing support
                             if (mDebugLog) Log.d(TAG, "discoverOpenStores(): billing is not supported by store: " + name);
-                        } else if ((options.verifyMode == Options.VERIFY_EVERYTHING) && !options.storeKeys.containsKey(appstoreName)) { 
+                        } else if ((options.verifyMode == Options.VERIFY_EVERYTHING) && !options.storeKeys.containsKey(appstoreName)) {
                             // don't connect to OpenStore if no key provided and verification is strict
                             Log.e(TAG, "discoverOpenStores() verification is required but publicKey is not provided: " + name);
                         } else {
@@ -471,6 +472,9 @@ public class OpenIabHelper {
                     //Nothing to do here
                 }
             }, Context.BIND_AUTO_CREATE);
+            } catch (SecurityException exception) {
+                Log.e(TAG, "can't bind to " + name, exception);
+            }
         }
         try {
             storesToCheck.await(options.discoveryTimeoutMs, TimeUnit.MILLISECONDS);
