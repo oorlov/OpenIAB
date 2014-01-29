@@ -338,20 +338,32 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
         mIapConnector = null;
     }
 
-    private String getItemGroupId(String sku) {
-        String[] skuParts = sku.split("/");
-        if (skuParts.length != 2) {
-            throw new IllegalStateException("Samsung SKU must contain ITEM_GROUP_ID and ITEM_ID");
-        }
-        return skuParts[0];
+    private static String getItemGroupId(String sku) {
+        return getSkuParts(sku)[0];
     }
 
-    private String getItemId(String sku) {
+    private static String getItemId(String sku) {
+        return getSkuParts(sku)[1];
+    }
+
+    private static String[] getSkuParts(String sku) {
         String[] skuParts = sku.split("/");
         if (skuParts.length != 2) {
-            throw new IllegalStateException("Samsung SKU must contain ITEM_GROUP_ID and ITEM_ID");
+            throw new IllegalArgumentException("Samsung SKU must contain ITEM_GROUP_ID and ITEM_ID.");
         }
-        return skuParts[1];
+
+        for (int i = 0; i < skuParts.length; i++) {
+            try {
+                Integer.parseInt(skuParts[i]);
+            } catch (NumberFormatException e) {
+                if (i == 0) {
+                    throw new IllegalArgumentException("Samsung SKU must contain numeric ITEM_GROUP_ID.");
+                } else if (i == 1) {
+                    throw new IllegalArgumentException("Samsung SKU must contain numeric ITEM_ID.");
+                }
+            }
+        }
+        return skuParts;
     }
 
     private void bindIapService() {
