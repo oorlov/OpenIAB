@@ -62,7 +62,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class SamsungApps extends DefaultAppstore {
     private static final String TAG = SamsungApps.class.getSimpleName();
-    private static final long TIMEOUT_BILLING_SUPPORTED = 5;
+    private static final long TIMEOUT_BILLING_SUPPORTED_MS = 5000;
     private static final int IAP_SIGNATURE_HASHCODE = 0x7a7eaf4b;
     public static final String IAP_PACKAGE_NAME = "com.sec.android.iap";
     public static final String IAP_SERVICE_NAME = "com.sec.android.iap.service.iapService";
@@ -131,7 +131,7 @@ public class SamsungApps extends DefaultAppstore {
                     if (mOptions.samsungCertificationEnabled) {
                         mainLatch.await();
                     } else {
-                        mainLatch.await(TIMEOUT_BILLING_SUPPORTED, TimeUnit.SECONDS);
+                        mainLatch.await(TIMEOUT_BILLING_SUPPORTED_MS, TimeUnit.MILLISECONDS);
                     }
                 } catch (InterruptedException e) {
                     Log.e(TAG, "isBillingAvailable failed", e);
@@ -161,7 +161,7 @@ public class SamsungApps extends DefaultAppstore {
                         if (mOptions.samsungCertificationEnabled) {
                             inventoryLatch.await();
                         } else {
-                            inventoryLatch.await(TIMEOUT_BILLING_SUPPORTED, TimeUnit.SECONDS);
+                            inventoryLatch.await(TIMEOUT_BILLING_SUPPORTED_MS, TimeUnit.MILLISECONDS);
                         }
                     } catch (InterruptedException e) {
                         Log.e(TAG, "isBillingAvailable() failed", e);
