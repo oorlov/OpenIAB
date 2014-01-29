@@ -67,7 +67,7 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
     public static final int IAP_MODE_COMMERCIAL = 0;
     public static final int IAP_MODE_TEST_SUCCESS = 1;
     public static final int IAP_MODE_TEST_FAIL = -1;
-    private static final int CURRENT_MODE = SamsungApps.isDebugMode ? IAP_MODE_TEST_SUCCESS : IAP_MODE_COMMERCIAL;
+    private static final int CURRENT_MODE = SamsungApps.isSamsungTestMode ? IAP_MODE_TEST_SUCCESS : IAP_MODE_COMMERCIAL;
 
     public static final String IAP_SERVICE_NAME = "com.sec.android.iap.service.iapService";
     public static final String ACCOUNT_ACTIVITY_NAME = "com.sec.android.iap.activity.AccountActivity";
@@ -133,9 +133,9 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
     public static final int IAP_ERROR_CONFIRM_INBOX = -1006;
     // ========================================================================
 
-    public boolean mIsBind = false;
-    private IAPConnector mIapConnector = null;
-    private Context mContext;
+    public boolean mIsBind;
+    private IAPConnector mIapConnector;
+    private Activity mContext;
     private Options options;
     private ServiceConnection mServiceConnection;
     private String mPurchasingItemType;
@@ -148,7 +148,7 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
     private String mItemGroupId;
     private String mExtraData;
 
-    public SamsungAppsBillingService(Context context, Options options) {
+    public SamsungAppsBillingService(Activity context, Options options) {
         this.mContext = context;
         this.options = options;
     }
@@ -156,11 +156,11 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
     @Override
     public void startSetup(final OnIabSetupFinishedListener listener) {
         this.setupListener = listener;
-
-        ComponentName com = new ComponentName(SamsungApps.IAP_PACKAGE_NAME, ACCOUNT_ACTIVITY_NAME);
-        Intent intent = new Intent();
-        intent.setComponent(com);
-        ((Activity)mContext).startActivityForResult(intent, options.samsungCertificationRequestCode);
+//        ComponentName com = new ComponentName(SamsungApps.IAP_PACKAGE_NAME, ACCOUNT_ACTIVITY_NAME);
+//        Intent intent = new Intent();
+//        intent.setComponent(com);
+//        mContext.startActivityForResult(intent, options.samsungCertificationRequestCode);
+        bindIapService();
     }
 
     @Override
@@ -189,7 +189,7 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
                     if (mDebugLog) Log.d(TAG, "getItemsInbox, startNum = " + startNum + ", endNum = " + endNum);
                     itemInbox = mIapConnector.getItemsInbox(mContext.getPackageName(), itemGroupId, startNum, endNum, "19700101", today);
                 } catch (RemoteException e) {
-                    Log.e(TAG, "Samsung getItemsInbox: " + e.getMessage());
+                    if (mDebugLog) Log.e(TAG, "Samsung getItemsInbox: " + e.getMessage());
                 }
                 startNum += ITEM_RESPONSE_COUNT;
                 endNum += ITEM_RESPONSE_COUNT;
@@ -220,7 +220,7 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
                         try {
                             itemList = mIapConnector.getItemList(CURRENT_MODE, mContext.getPackageName(), itemGroupId, startNum, endNum, ITEM_TYPE_ALL);
                         } catch (RemoteException e) {
-                            Log.e(TAG, "Samsung getItemList: " + e.getMessage());
+                            if (mDebugLog) Log.e(TAG, "Samsung getItemList: " + e.getMessage());
                         }
                         startNum += ITEM_RESPONSE_COUNT;
                         endNum += ITEM_RESPONSE_COUNT;
@@ -257,18 +257,18 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
 
     @Override
     public boolean handleActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == options.samsungCertificationRequestCode) {
-            if (resultCode == Activity.RESULT_OK) {
-                bindIapService();
-            } else if (resultCode == Activity.RESULT_CANCELED) {
-                setupListener.onIabSetupFinished(new IabResult(IabHelper.BILLING_RESPONSE_RESULT_USER_CANCELED,
-                        "Account certification canceled"));
-            } else {
-                setupListener.onIabSetupFinished(new IabResult(IabHelper.BILLING_RESPONSE_RESULT_ERROR,
-                        "Unknown error. Result code: " + resultCode));
-            }
-            return true;
-        }
+//        if (requestCode == options.samsungCertificationRequestCode) {
+//            if (resultCode == Activity.RESULT_OK) {
+//                bindIapService();
+//            } else if (resultCode == Activity.RESULT_CANCELED) {
+//                setupListener.onIabSetupFinished(new IabResult(IabHelper.BILLING_RESPONSE_RESULT_USER_CANCELED,
+//                        "Account certification canceled"));
+//            } else {
+//                setupListener.onIabSetupFinished(new IabResult(IabHelper.BILLING_RESPONSE_RESULT_ERROR,
+//                        "Unknown error. Result code: " + resultCode));
+//            }
+//            return true;
+//        }
         if (requestCode != mRequestCode) {
             return false;
         }
@@ -307,7 +307,7 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
                     purchase.setPurchaseTime(Long.parseLong(purchaseJson.getString(JSON_KEY_PURCHASE_DATE)));
                     purchase.setToken(purchaseJson.getString(JSON_KEY_PURCHASE_ID));
                 } catch (JSONException e) {
-                    Log.e(TAG, "JSON parse error: " + e.getMessage());
+                    if (mDebugLog) Log.e(TAG, "JSON parse error: " + e.getMessage());
                 }
 
                 purchase.setItemType(mPurchasingItemType);
@@ -330,8 +330,9 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
 
     @Override
     public void dispose() {
-        if (mContext != null && mServiceConnection != null) {
-            mContext.unbindService(mServiceConnection);
+        if (mServiceConnection != null && mIsBind) {
+            mContext.getApplicationContext().unbindService(mServiceConnection);
+            mIsBind = false;
         }
         mServiceConnection = null;
         mIapConnector = null;
@@ -367,12 +368,10 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
             }
             @Override
             public void onServiceDisconnected(ComponentName name) {
-                mIapConnector = null;
-                mServiceConnection = null;
             }
         };
         Intent serviceIntent = new Intent(IAP_SERVICE_NAME);
-        mContext.bindService(serviceIntent, mServiceConnection, Context.BIND_AUTO_CREATE);
+        mIsBind = mContext.getApplicationContext().bindService(serviceIntent, mServiceConnection, Context.BIND_AUTO_CREATE);
     }
 
 
@@ -435,7 +434,7 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
                     }
                 }
             } catch (JSONException e) {
-                Log.e(TAG, "JSON parse error: " + e.getMessage());
+                if (mDebugLog) Log.e(TAG, "JSON parse error: " + e.getMessage());
             }
         }
         return items.size() == ITEM_RESPONSE_COUNT;

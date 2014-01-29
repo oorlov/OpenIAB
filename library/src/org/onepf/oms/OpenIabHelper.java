@@ -27,6 +27,7 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import android.text.TextUtils;
 import org.onepf.oms.appstore.AmazonAppstore;
 import org.onepf.oms.appstore.GooglePlay;
 import org.onepf.oms.appstore.OpenAppstore;
@@ -170,7 +171,6 @@ public class OpenIabHelper {
             if (skuMap.get(sku) != null) {
                 throw new IllegalArgumentException("Already specified SKU. sku: " + sku + " -> storeSku: " + skuMap.get(sku));
             }
-            ;
             Map<String, String> storeSkuMap = storeSku2skuMappings.get(storeName);
             if (storeSkuMap == null) {
                 storeSkuMap = new HashMap<String, String>();
@@ -326,60 +326,73 @@ public class OpenIabHelper {
                     if (mDebugLog) Log.d(TAG, in() + " " + "startSetup() discovered openstores: " + openStores.toString());
                     stores2check.addAll(openStores);
                     if (options.verifyMode == Options.VERIFY_EVERYTHING && !options.storeKeys.containsKey(NAME_GOOGLE)) {
-                        // don't work with GooglePlay if verifyMode is strict and no publicKey provided 
+                        // don't work with GooglePlay if verifyMode is strict and no publicKey provided
                     } else {
-                        final String publicKey = options.verifyMode == Options.VERIFY_SKIP ? null 
+                        final String publicKey = options.verifyMode == Options.VERIFY_SKIP ? null
                                 : options.storeKeys.get(OpenIabHelper.NAME_GOOGLE);
                         stores2check.add(new GooglePlay(context, publicKey));
                     }
                     stores2check.add(new AmazonAppstore(context));
                     stores2check.add(new TStore(context, options.storeKeys.get(OpenIabHelper.NAME_TSTORE)));
-                    if (getAllStoreSkus(NAME_SAMSUNG).size() > 0) {  
-                        // SamsungApps shows lot of UI stuff during init 
+                    if (getAllStoreSkus(NAME_SAMSUNG).size() > 0) {
+                        // SamsungApps shows lot of UI stuff during init
                         // try it only if samsung SKUs are specified
-                        stores2check.add(new SamsungApps(context, options));
+                        stores2check.add(new SamsungApps((Activity) context, options));
                     }
                 }
-                
+                List<Appstore> namedStoresWithBilling = new ArrayList<Appstore>();
                 for (Appstore store : stores2check) {
-                    if (store instanceof SamsungApps) samsungInSetup = (SamsungApps) store;
-                }
-                
-                IabResult result = new IabResult(BILLING_RESPONSE_RESULT_BILLING_UNAVAILABLE, "Billing isn't supported");
-                
-                if (options.checkInventory) {
-                    
-                    final List<Appstore> equippedStores = checkInventory(stores2check);
-                    
-                    if (equippedStores.size() > 0) {
-                        mAppstore = selectBillingService(equippedStores);
-                        if (mDebugLog) Log.d(TAG, in() + " " + "select equipped");
-                    } 
-                    if (mAppstore != null) {
-                        result = new IabResult(BILLING_RESPONSE_RESULT_OK, "Successfully initialized with existing inventory: " + mAppstore.getAppstoreName());
-                    } else {
-                        // found no equipped stores. Select store based on store parameters 
-                        mAppstore = selectBillingService(stores2check);
-                        if (mDebugLog) Log.d(TAG, in() + " " + "select non-equipped");
-                    }
-                    if (mAppstore != null) {
-                        result = new IabResult(BILLING_RESPONSE_RESULT_OK, "Successfully initialized: " + mAppstore.getAppstoreName());
-                        mAppstoreBillingService = mAppstore.getInAppBillingService();
-                    }
-                    fireSetupFinished(listener, result);
-                } else {                // no inventory check. Select store based on store parameters   
-                    mAppstore = selectBillingService(stores2check);
-                    if (mAppstore != null) {
-                        mAppstoreBillingService = mAppstore.getInAppBillingService(); 
-                        mAppstoreBillingService.startSetup(new OnIabSetupFinishedListener() {
-                            public void onIabSetupFinished(IabResult result) {
-                                fireSetupFinished(listener, result);
+                    if (!TextUtils.isEmpty(store.getAppstoreName())) {//don't work with stores without name
+                        boolean billingAvailable = store.isBillingAvailable(context.getPackageName());
+                        if (billingAvailable) {
+                            namedStoresWithBilling.add(store);
+                            if (store instanceof SamsungApps) {
+                                samsungInSetup = (SamsungApps) store;
                             }
-                        });
-                    } else {
-                        fireSetupFinished(listener, result);
+                        }
                     }
                 }
+
+                IabResult result = new IabResult(BILLING_RESPONSE_RESULT_ERROR, "An unknown error has occurred.");
+                if (namedStoresWithBilling.size() == 0) {
+                    result = new IabResult(BILLING_RESPONSE_RESULT_BILLING_UNAVAILABLE, "Billing isn't supported.");
+                    fireSetupFinished(listener, result);
+                } else {
+                    if (options.checkInventory) {
+                        final List<Appstore> equippedStores = checkInventory(namedStoresWithBilling);
+                        if (equippedStores.size() > 0) {
+                            mAppstore = selectBillingService(equippedStores);
+                            if (mDebugLog) Log.d(TAG, in() + " " + "select equipped");
+                        }
+                        if (mAppstore != null) {
+                            result = new IabResult(BILLING_RESPONSE_RESULT_OK, "Successfully initialized with existing inventory: " + mAppstore.getAppstoreName());
+                        } else {
+                            // found no equipped stores. Select store based on store parameters
+                            mAppstore = selectBillingService(namedStoresWithBilling);
+                            if (mDebugLog) Log.d(TAG, in() + " " + "select non-equipped");
+                            if (mAppstore != null) {
+                                result = new IabResult(BILLING_RESPONSE_RESULT_OK, "Successfully initialized: " + mAppstore.getAppstoreName());
+                            }
+                        }
+                        if(mAppstore!=null){
+                            mAppstoreBillingService = mAppstore.getInAppBillingService();
+                        }
+                        fireSetupFinished(listener, result);
+                    } else {                // no inventory check. Select store based on store parameters
+                        mAppstore = selectBillingService(namedStoresWithBilling);
+                        if (mAppstore != null) {
+                            mAppstoreBillingService = mAppstore.getInAppBillingService();
+                            mAppstoreBillingService.startSetup(new OnIabSetupFinishedListener() {
+                                public void onIabSetupFinished(IabResult result) {
+                                    fireSetupFinished(listener, result);
+                                }
+                            });
+                        } else {
+                            fireSetupFinished(listener, result);
+                        }
+                    }
+                }
+
                 for (Appstore store : stores2check) {
                     if (store != mAppstore && store.getInAppBillingService() != null) {
                         store.getInAppBillingService().dispose();
@@ -445,23 +458,22 @@ public class OpenIabHelper {
                 public void onServiceConnected(ComponentName name, IBinder service) {
                     if (mDebugLog) Log.d(TAG, "discoverOpenStores() appstoresService connected for component: " + name.flattenToShortString());
                     IOpenAppstore openAppstoreService = IOpenAppstore.Stub.asInterface(service);
-
                     try {
                         String appstoreName = openAppstoreService.getAppstoreName();
                         Intent billingIntent = openAppstoreService.getBillingServiceIntent();
                         if (appstoreName == null) { // no name - no service
-                            Log.e(TAG, "discoverOpenStores() Appstore doesn't have name. Skipped. ComponentName: " + name);
+                            if (mDebugLog) Log.e(TAG, "discoverOpenStores() Appstore doesn't have name. Skipped. ComponentName: " + name);
                         } else if (billingIntent == null) { // don't handle stores without billing support
                             if (mDebugLog) Log.d(TAG, "discoverOpenStores(): billing is not supported by store: " + name);
-                        } else if ((options.verifyMode == Options.VERIFY_EVERYTHING) && !options.storeKeys.containsKey(appstoreName)) { 
+                        } else if ((options.verifyMode == Options.VERIFY_EVERYTHING) && !options.storeKeys.containsKey(appstoreName)) {
                             // don't connect to OpenStore if no key provided and verification is strict
-                            Log.e(TAG, "discoverOpenStores() verification is required but publicKey is not provided: " + name);
+                            if (mDebugLog) Log.e(TAG, "discoverOpenStores() verification is required but publicKey is not provided: " + name);
                         } else {
                             String publicKey = options.storeKeys.get(appstoreName);
                             if (options.verifyMode == Options.VERIFY_SKIP) publicKey = null;
                             final OpenAppstore openAppstore = new OpenAppstore(context, appstoreName, openAppstoreService, billingIntent, publicKey, this);
                             openAppstore.componentName = name;
-                            Log.d(TAG, "discoverOpenStores() add new OpenStore: " + openAppstore);
+                            if (mDebugLog) Log.d(TAG, "discoverOpenStores() add new OpenStore: " + openAppstore);
                             synchronized (result) {
                                 if (result.contains(openAppstore) == false) {
                                     result.add(openAppstore);
@@ -469,7 +481,7 @@ public class OpenIabHelper {
                             }
                         }
                     } catch (RemoteException e) {
-                        Log.e(TAG, "discoverOpenStores() ComponentName: " + name, e);
+                        if (mDebugLog) Log.e(TAG, "discoverOpenStores() ComponentName: " + name, e);
                     }
                     storesToCheck.countDown();
                 }
@@ -484,7 +496,7 @@ public class OpenIabHelper {
         try {
             storesToCheck.await(options.discoveryTimeoutMs, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
-            Log.e(TAG, "Interrupted: discovering OpenStores. ", e);
+            if (mDebugLog) Log.e(TAG, "Interrupted: discovering OpenStores. ", e);
         }
         return result;
     }
@@ -498,47 +510,56 @@ public class OpenIabHelper {
      * @return list of stores with non-empty inventory
      */
     protected List<Appstore> checkInventory(final List<Appstore> availableStores) {
-        String packageName = context.getPackageName();
         // candidates:
         Map<String, Appstore> candidates = new HashMap<String, Appstore>();
         for (Appstore appstore : availableStores) {
-            if (appstore.isBillingAvailable(packageName)) {
-                candidates.put(appstore.getAppstoreName(), appstore);
-            }
+            candidates.put(appstore.getAppstoreName(), appstore);
         }
         if (mDebugLog) Log.d(TAG, in() + " " + candidates.size() + " inventory candidates");
         final List<Appstore> equippedStores = Collections.synchronizedList(new ArrayList<Appstore>());
-        final CountDownLatch storeRemains = new CountDownLatch(candidates.size());
-        // for every appstore: connect to billing service and check inventory 
+        // for every appstore: connect to billing service and check inventory
         for (Map.Entry<String, Appstore> entry : candidates.entrySet()) {
             final Appstore appstore = entry.getValue();
             final AppstoreInAppBillingService billingService = entry.getValue().getInAppBillingService();
+            final IabResult[] resultFromMainThread = {null};
+            final CountDownLatch mainCountDownLatch = new CountDownLatch(1);
             billingService.startSetup(new OnIabSetupFinishedListener() {
-                public void onIabSetupFinished(IabResult result) {
+                public void onIabSetupFinished(final IabResult result) {
                     if (mDebugLog) Log.d(TAG, in() + " " + "billing set " + appstore.getAppstoreName());
-                    new Thread(new Runnable() {
-                        public void run() {
-                            try {
-                                Inventory inventory = billingService.queryInventory(false, null, null);
-                                if (inventory.getAllPurchases().size() > 0) {
-                                    equippedStores.add(appstore);
-                                }
-                                if (mDebugLog) Log.d(TAG, in() + " " + "inventoryCheck() in " + appstore.getAppstoreName() + " found: " + inventory.getAllPurchases().size() + " purchases");
-                            } catch (IabException e) {
-                                Log.e(TAG, "inventoryCheck() failed for " + appstore.getAppstoreName());
-                            }
-                            storeRemains.countDown();
-                        }
-                    }, "inv-check[" + appstore.getAppstoreName()+ "]").start();;
+                    resultFromMainThread[0] = result;
+                    mainCountDownLatch.countDown();
                 }
             });
-        }
-        try {
-            storeRemains.await(options.checkInventoryTimeoutMs, TimeUnit.MILLISECONDS);
-            if (mDebugLog) Log.d(TAG, in() + " " + "inventory check done");
-        } catch (InterruptedException e) {
-            Log.e(TAG, "selectBillingService()  inventory check is failed. candidates: " + candidates.size() 
-                    + ", inventory remains: " + storeRemains.getCount() , e);
+            try {
+                mainCountDownLatch.await(4, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                if (mDebugLog) Log.e(TAG, "inventoryCheck() failed for " + appstore.getAppstoreName(), e);
+            }
+
+            if (resultFromMainThread[0] != null && resultFromMainThread[0].isSuccess()) {
+                final CountDownLatch countDownLatch = new CountDownLatch(1);
+                new Thread(new Runnable() {
+                    public void run() {
+                        try {
+                            Inventory inventory = billingService.queryInventory(false, null, null);
+                            if (inventory.getAllPurchases().size() > 0) {
+                                equippedStores.add(appstore);
+                            }
+                            if (mDebugLog)
+                                Log.d(TAG, in() + " " + "inventoryCheck() in " + appstore.getAppstoreName() + " found: " + inventory.getAllPurchases().size() + " purchases");
+                        } catch (IabException e) {
+                            if (mDebugLog) Log.e(TAG, "inventoryCheck() failed for " + appstore.getAppstoreName());
+                        }
+                        countDownLatch.countDown();
+                    }
+                }, "inv-check[" + appstore.getAppstoreName() + "]").start();
+                try {
+                    countDownLatch.await(4, TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    if (mDebugLog) Log.e(TAG, "inventoryCheck() failed for " + appstore.getAppstoreName());
+                }
+            }
+
         }
         return equippedStores;
     }
@@ -563,16 +584,11 @@ public class OpenIabHelper {
         String packageName = context.getPackageName();
         // candidates:
         Map<String, Appstore> candidates = new HashMap<String, Appstore>();
-        //
         for (Appstore appstore : availableStores) {
-            if (appstore.isBillingAvailable(packageName)) {
-                candidates.put(appstore.getAppstoreName(), appstore);
-            } else {
-                continue; // for billing we cannot select store without billing
-            }
             if (appstore.isPackageInstaller(packageName)) {
                 return appstore;
             }
+            candidates.put(appstore.getAppstoreName(), appstore);
         }
         if (candidates.size() == 0) return null;
         
