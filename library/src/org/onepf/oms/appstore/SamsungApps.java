@@ -73,6 +73,7 @@ public class SamsungApps extends DefaultAppstore {
     //isSamsungTestMode = true -> always returns Samsung Apps is installer and billing is available
     public static boolean isSamsungTestMode;
     private boolean mDebugMode;
+    private Boolean mBillingAvailable;
 
     public SamsungApps(Activity activity, Options options) {
         this.mActivity = activity;
@@ -89,80 +90,92 @@ public class SamsungApps extends DefaultAppstore {
      */
     @Override
     public boolean isBillingAvailable(final String packageName) {
-        if (isSamsungTestMode) {
-            if (mDebugMode) Log.d(TAG, "isBillingAvailable() billing is supported in test mode.");
-            return true;
-        }
-        boolean iapInstalled = true;
-        try {
-            PackageManager packageManager = mActivity.getPackageManager();
-            if (packageManager != null) {
-                packageManager.getApplicationInfo(IAP_PACKAGE_NAME, PackageManager.GET_META_DATA);
+        if (mBillingAvailable== null) {
+            if (isSamsungTestMode) {
+                if (mDebugMode) Log.d(TAG, "isBillingAvailable() billing is supported in test mode.");
+                return true;
             }
-        } catch (PackageManager.NameNotFoundException e) {
-            iapInstalled = false;
-        }
-        if (iapInstalled) {
+            boolean iapInstalled = true;
             try {
-                Signature[] signatures = mActivity.getPackageManager().getPackageInfo(IAP_PACKAGE_NAME, PackageManager.GET_SIGNATURES).signatures;
-                if (signatures != null) {
-                    if (signatures[0].hashCode() != IAP_SIGNATURE_HASHCODE) {
-                        iapInstalled = false;
-                    }
+                PackageManager packageManager = mActivity.getPackageManager();
+                if (packageManager != null) {
+                    packageManager.getApplicationInfo(IAP_PACKAGE_NAME, PackageManager.GET_META_DATA);
                 }
-            } catch (Exception e) {
+            } catch (PackageManager.NameNotFoundException e) {
                 iapInstalled = false;
             }
-        }
-        if (iapInstalled) {
-            final Boolean billingAvailable[] = {null};
-            final CountDownLatch mainLatch = new CountDownLatch(1);
-            final IabResult[] resultFromMainThread = {null};
-            getInAppBillingService().startSetup(new IabHelper.OnIabSetupFinishedListener() {
-                @Override
-                public void onIabSetupFinished(final IabResult result) {
-                    resultFromMainThread[0] = result;
-                    mainLatch.countDown();
-                }
-            });
-            try {
-                mainLatch.await(TIMEOUT_BILLING_SUPPORTED, TimeUnit.SECONDS);
-            } catch (InterruptedException e) {
-                if (mDebugMode) Log.e(TAG, "isBillingAvailable failed", e);
-            }
-            if (resultFromMainThread[0] != null && resultFromMainThread[0].isSuccess()) {
-                final CountDownLatch inventoryLatch = new CountDownLatch(1);
-                new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (resultFromMainThread[0].isSuccess()) {
-                            try {
-                                Inventory inventory = getInAppBillingService().queryInventory(true, OpenIabHelper.getAllStoreSkus(OpenIabHelper.NAME_SAMSUNG), null);
-                                if (inventory.mSkuMap != null && inventory.mSkuMap.size() > 0) {
-                                    billingAvailable[0] = true;
-                                }
-                            } catch (IabException e) {
-                                if (mDebugMode) Log.e(TAG, "isBillingAvailable() failed", e);
-                            } finally {
-                                getInAppBillingService().dispose();
-                                mBillingService = null;
-                            }
-                        }
-                        inventoryLatch.countDown();
-                    }
-                }).start();
+            if (iapInstalled) {
                 try {
-                    inventoryLatch.await(TIMEOUT_BILLING_SUPPORTED, TimeUnit.SECONDS);
-                } catch (InterruptedException e) {
-                    if (mDebugMode) Log.e(TAG, "isBillingAvailable() failed", e);
+                    Signature[] signatures = mActivity.getPackageManager().getPackageInfo(IAP_PACKAGE_NAME, PackageManager.GET_SIGNATURES).signatures;
+                    if (signatures != null) {
+                        if (signatures[0].hashCode() != IAP_SIGNATURE_HASHCODE) {
+                            iapInstalled = false;
+                        }
+                    }
+                } catch (Exception e) {
+                    iapInstalled = false;
                 }
-            } else {
-                getInAppBillingService().dispose();
-                mBillingService = null;
             }
-            return billingAvailable[0] != null;
+            if (iapInstalled) {
+                final Boolean billingAvailable[] = {null};
+                final CountDownLatch mainLatch = new CountDownLatch(1);
+                final IabResult[] resultFromMainThread = {null};
+                getInAppBillingService().startSetup(new IabHelper.OnIabSetupFinishedListener() {
+                    @Override
+                    public void onIabSetupFinished(final IabResult result) {
+                        resultFromMainThread[0] = result;
+                        mainLatch.countDown();
+                    }
+                });
+                try {
+                    if (mOptions.samsungCertificationEnabled) {
+                        mainLatch.await();
+                    } else {
+                        mainLatch.await(TIMEOUT_BILLING_SUPPORTED, TimeUnit.SECONDS);
+                    }
+                } catch (InterruptedException e) {
+                    Log.e(TAG, "isBillingAvailable failed", e);
+                }
+                if (resultFromMainThread[0] != null && resultFromMainThread[0].isSuccess()) {
+                    final CountDownLatch inventoryLatch = new CountDownLatch(1);
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (resultFromMainThread[0].isSuccess()) {
+                                try {
+                                    Inventory inventory = getInAppBillingService().queryInventory(true, OpenIabHelper.getAllStoreSkus(OpenIabHelper.NAME_SAMSUNG), null);
+                                    if (inventory.mSkuMap != null && inventory.mSkuMap.size() > 0) {
+                                        billingAvailable[0] = true;
+                                    }
+                                } catch (IabException e) {
+                                    Log.e(TAG, "isBillingAvailable() failed", e);
+                                } finally {
+                                    getInAppBillingService().dispose();
+                                    mBillingService = null;
+                                }
+                            }
+                            inventoryLatch.countDown();
+                        }
+                    }).start();
+                    try {
+                        if (mOptions.samsungCertificationEnabled) {
+                            inventoryLatch.await();
+                        } else {
+                            inventoryLatch.await(TIMEOUT_BILLING_SUPPORTED, TimeUnit.SECONDS);
+                        }
+                    } catch (InterruptedException e) {
+                        Log.e(TAG, "isBillingAvailable() failed", e);
+                    }
+                } else {
+                    getInAppBillingService().dispose();
+                    mBillingService = null;
+                }
+                return mBillingAvailable = billingAvailable[0] != null;
+            } else {
+                return mBillingAvailable = false;
+            }
         } else {
-            return false;
+            return mBillingAvailable;
         }
     }
 
