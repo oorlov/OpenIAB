@@ -472,8 +472,8 @@ public class OpenIabHelper {
                     //Nothing to do here
                 }
             }, Context.BIND_AUTO_CREATE);
-            } catch (SecurityException exception) {
-                Log.e(TAG, "can't bind to " + name, exception);
+            } catch (SecurityException e) {
+                if (mDebugLog) Log.e(TAG, "can't bind to " + name, e);
             }
         }
         try {
@@ -518,13 +518,15 @@ public class OpenIabHelper {
                                 if (inventory.getAllPurchases().size() > 0) {
                                     equippedStores.add(appstore);
                                 }
-                                if (mDebugLog) Log.d(TAG, in() + " " + "inventoryCheck() in " + appstore.getAppstoreName() + " found: " + inventory.getAllPurchases().size() + " purchases");
+                                if (mDebugLog)
+                                    Log.d(TAG, in() + " " + "inventoryCheck() in " + appstore.getAppstoreName() + " found: " + inventory.getAllPurchases().size() + " purchases");
                             } catch (IabException e) {
                                 Log.e(TAG, "inventoryCheck() failed for " + appstore.getAppstoreName());
                             }
                             storeRemains.countDown();
                         }
-                    }, "inv-check[" + appstore.getAppstoreName()+ "]").start();;
+                    }, "inv-check[" + appstore.getAppstoreName() + "]").start();
+                    ;
                 }
             });
         }
