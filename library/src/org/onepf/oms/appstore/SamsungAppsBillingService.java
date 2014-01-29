@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
+import android.text.TextUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.onepf.oms.AppstoreInAppBillingService;
@@ -353,9 +354,7 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
         }
 
         for (int i = 0; i < skuParts.length; i++) {
-            try {
-                Integer.parseInt(skuParts[i]);
-            } catch (NumberFormatException e) {
+            if (!TextUtils.isDigitsOnly(skuParts[i])) {
                 if (i == 0) {
                     throw new IllegalArgumentException("Samsung SKU must contain numeric ITEM_GROUP_ID.");
                 } else if (i == 1) {
