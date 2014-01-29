@@ -27,6 +27,7 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import android.text.TextUtils;
 import org.onepf.oms.appstore.AmazonAppstore;
 import org.onepf.oms.appstore.GooglePlay;
 import org.onepf.oms.appstore.OpenAppstore;
@@ -404,7 +405,12 @@ public class OpenIabHelper {
                 }
             }
         }
-        
+        List<String> allStoreSkus = getAllStoreSkus(OpenIabHelper.NAME_SAMSUNG);
+        if (!allStoreSkus.isEmpty()) {
+            for (String sku : allStoreSkus) {
+                checkSamsungSku(sku);
+            }
+        }
     }
 
     protected void fireSetupFinished(final IabHelper.OnIabSetupFinishedListener listener, final IabResult result) {
@@ -516,6 +522,10 @@ public class OpenIabHelper {
             billingService.startSetup(new OnIabSetupFinishedListener() {
                 public void onIabSetupFinished(IabResult result) {
                     if (mDebugLog) Log.d(TAG, in() + " " + "billing set " + appstore.getAppstoreName());
+                    if(result.isFailure()) {
+                        storeRemains.countDown();
+                        return;
+                    }
                     new Thread(new Runnable() {
                         public void run() {
                             try {
@@ -529,7 +539,7 @@ public class OpenIabHelper {
                             }
                             storeRemains.countDown();
                         }
-                    }, "inv-check[" + appstore.getAppstoreName()+ "]").start();;
+                    }, "inv-check[" + appstore.getAppstoreName()+ "]").start();
                 }
             });
         }
@@ -879,6 +889,21 @@ public class OpenIabHelper {
         if (mDebugLog) Log.w(TAG, "In-app billing warning: " + msg);
     }
 
+    private static void checkSamsungSku(String sku) {
+        String[] skuParts = sku.split("/");
+        if (skuParts.length != 2) {
+            throw new IllegalArgumentException("Samsung SKU must contain ITEM_GROUP_ID and ITEM_ID.");
+        }
+        for (int i = 0; i < skuParts.length; i++) {
+            if (!TextUtils.isDigitsOnly(skuParts[i])) {
+                if (i == 0) {
+                    throw new IllegalArgumentException("Samsung SKU must contain numeric ITEM_GROUP_ID.");
+                } else if (i == 1) {
+                    throw new IllegalArgumentException("Samsung SKU must contain numeric ITEM_ID.");
+                }
+            }
+        }
+    }
 
     private static String setupStateToString(int setupState) {
         String state;

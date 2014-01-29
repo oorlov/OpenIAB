@@ -72,7 +72,7 @@ public class SamsungApps extends DefaultAppstore {
     private Options mOptions;
     //isSamsungTestMode = true -> always returns Samsung Apps is installer and billing is available
     public static boolean isSamsungTestMode;
-    private boolean mDebugMode;
+    private boolean mDebugLog;
     private Boolean mBillingAvailable;
 
     public SamsungApps(Activity activity, Options options) {
@@ -92,15 +92,13 @@ public class SamsungApps extends DefaultAppstore {
     public boolean isBillingAvailable(final String packageName) {
         if (mBillingAvailable== null) {
             if (isSamsungTestMode) {
-                if (mDebugMode) Log.d(TAG, "isBillingAvailable() billing is supported in test mode.");
+                if (mDebugLog) Log.d(TAG, "isBillingAvailable() billing is supported in test mode.");
                 return true;
             }
             boolean iapInstalled = true;
             try {
                 PackageManager packageManager = mActivity.getPackageManager();
-                if (packageManager != null) {
-                    packageManager.getApplicationInfo(IAP_PACKAGE_NAME, PackageManager.GET_META_DATA);
-                }
+                packageManager.getApplicationInfo(IAP_PACKAGE_NAME, PackageManager.GET_META_DATA);
             } catch (PackageManager.NameNotFoundException e) {
                 iapInstalled = false;
             }

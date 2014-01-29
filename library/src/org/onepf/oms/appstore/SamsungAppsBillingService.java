@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
-import android.text.TextUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.onepf.oms.AppstoreInAppBillingService;
@@ -134,7 +133,7 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
     public static final int IAP_ERROR_CONFIRM_INBOX = -1006;
     // ========================================================================
 
-    public volatile boolean mIsBound;
+    private volatile boolean mIsBound;
     private IAPConnector mIapConnector;
     private Activity mContext;
     private Options mOptions;
@@ -162,8 +161,9 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
             Intent intent = new Intent();
             intent.setComponent(com);
             mContext.startActivityForResult(intent, mOptions.samsungCertificationRequestCode);
+        } else {
+            bindIapService();
         }
-        bindIapService();
     }
 
     @Override
@@ -192,7 +192,7 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
                     if (mDebugLog) Log.d(TAG, "getItemsInbox, startNum = " + startNum + ", endNum = " + endNum);
                     itemInbox = mIapConnector.getItemsInbox(mContext.getPackageName(), itemGroupId, startNum, endNum, "19700101", today);
                 } catch (RemoteException e) {
-                    if (mDebugLog) Log.e(TAG, "Samsung getItemsInbox: " + e.getMessage());
+                    Log.e(TAG, "Samsung getItemsInbox: " + e.getMessage());
                 }
                 startNum += ITEM_RESPONSE_COUNT;
                 endNum += ITEM_RESPONSE_COUNT;
@@ -227,8 +227,7 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
                         }
                         startNum += ITEM_RESPONSE_COUNT;
                         endNum += ITEM_RESPONSE_COUNT;
-                    }
-                    while (processItemsBundle(itemList, itemGroupId, inventory, querySkuDetails, false, true, queryItemIds));
+                    } while (processItemsBundle(itemList, itemGroupId, inventory, querySkuDetails, false, true, queryItemIds));
                 }
             }
         }
@@ -262,20 +261,16 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
     @Override
     public boolean handleActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == mOptions.samsungCertificationRequestCode) {
-            if (mOptions.samsungCertificationEnabled) {
-                if (resultCode == Activity.RESULT_OK) {
-                    bindIapService();
-                } else if (resultCode == Activity.RESULT_CANCELED) {
-                    setupListener.onIabSetupFinished(new IabResult(IabHelper.BILLING_RESPONSE_RESULT_USER_CANCELED,
-                            "Account certification canceled"));
-                } else {
-                    setupListener.onIabSetupFinished(new IabResult(IabHelper.BILLING_RESPONSE_RESULT_ERROR,
-                            "Unknown error. Result code: " + resultCode));
-                }
-                return true;
+            if (resultCode == Activity.RESULT_OK) {
+                bindIapService();
+            } else if (resultCode == Activity.RESULT_CANCELED) {
+                setupListener.onIabSetupFinished(new IabResult(IabHelper.BILLING_RESPONSE_RESULT_USER_CANCELED,
+                        "Account certification canceled"));
             } else {
-                return false;
+                setupListener.onIabSetupFinished(new IabResult(IabHelper.BILLING_RESPONSE_RESULT_ERROR,
+                        "Unknown error. Result code: " + resultCode));
             }
+            return true;
         }
         if (requestCode != mRequestCode) {
             return false;
@@ -347,29 +342,11 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
     }
 
     private static String getItemGroupId(String sku) {
-        return getSkuParts(sku)[0];
+        return sku.split("/")[0];
     }
 
     private static String getItemId(String sku) {
-        return getSkuParts(sku)[1];
-    }
-
-    private static String[] getSkuParts(String sku) {
-        String[] skuParts = sku.split("/");
-        if (skuParts.length != 2) {
-            throw new IllegalArgumentException("Samsung SKU must contain ITEM_GROUP_ID and ITEM_ID.");
-        }
-
-        for (int i = 0; i < skuParts.length; i++) {
-            if (!TextUtils.isDigitsOnly(skuParts[i])) {
-                if (i == 0) {
-                    throw new IllegalArgumentException("Samsung SKU must contain numeric ITEM_GROUP_ID.");
-                } else if (i == 1) {
-                    throw new IllegalArgumentException("Samsung SKU must contain numeric ITEM_ID.");
-                }
-            }
-        }
-        return skuParts;
+        return sku.split("/")[1];
     }
 
     private void bindIapService() {
@@ -412,7 +389,7 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
         setupListener.onIabSetupFinished(new IabResult(errorCode, errorMsg));
     }
 
-    private boolean processItemsBundle(Bundle itemsBundle, String itemGroupId, Inventory inventory, boolean querySkuDetails, boolean addPurchase, boolean addConsumable, Set<String> queryItemIds) {
+    private boolean processItemsBundle(Bundle itemsBundle, String itemGroupId, Inventory inventory, boolean querySkuDetails, boolean addPurchase, boolean addConsumable,  Set<String> queryItemIds) {
         if (itemsBundle == null || itemsBundle.getInt(KEY_NAME_STATUS_CODE) != IAP_ERROR_NONE) {
             return false;
         }
