@@ -33,7 +33,6 @@ import org.onepf.oms.appstore.googleUtils.IabResult;
 import org.onepf.oms.appstore.googleUtils.Inventory;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -62,7 +61,6 @@ import java.util.concurrent.TimeUnit;
  */
 public class SamsungApps extends DefaultAppstore {
     private static final String TAG = SamsungApps.class.getSimpleName();
-    private static final long TIMEOUT_BILLING_SUPPORTED_MS = 5000;
     private static final int IAP_SIGNATURE_HASHCODE = 0x7a7eaf4b;
     public static final String IAP_PACKAGE_NAME = "com.sec.android.iap";
     public static final String IAP_SERVICE_NAME = "com.sec.android.iap.service.iapService";
@@ -86,11 +84,11 @@ public class SamsungApps extends DefaultAppstore {
     }
 
     /**
-     * @return true if Samsung Apps is installed in the system and inventory contains info about the skus
+     * @return true if Samsung Apps is installed in the system and a returned inventory contains info about the app's skus
      */
     @Override
     public boolean isBillingAvailable(final String packageName) {
-        if (mBillingAvailable== null) {
+        if (mBillingAvailable == null) {
             if (isSamsungTestMode) {
                 if (mDebugLog) Log.d(TAG, "isBillingAvailable() billing is supported in test mode.");
                 return true;
@@ -115,60 +113,40 @@ public class SamsungApps extends DefaultAppstore {
                 }
             }
             if (iapInstalled) {
-                final Boolean billingAvailable[] = {null};
+                final Boolean billingAvailable[] = {false};
                 final CountDownLatch mainLatch = new CountDownLatch(1);
-                final IabResult[] resultFromMainThread = {null};
                 getInAppBillingService().startSetup(new IabHelper.OnIabSetupFinishedListener() {
                     @Override
                     public void onIabSetupFinished(final IabResult result) {
-                        resultFromMainThread[0] = result;
-                        mainLatch.countDown();
+                        if (result.isSuccess()) {
+                            new Thread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    try {
+                                        Inventory inventory = getInAppBillingService().queryInventory(true, OpenIabHelper.getAllStoreSkus(OpenIabHelper.NAME_SAMSUNG), null);
+                                        if (inventory.mSkuMap != null && inventory.mSkuMap.size() > 0) {
+                                            billingAvailable[0] = true;
+                                        }
+                                    } catch (IabException e) {
+                                        Log.e(TAG, "isBillingAvailable() failed", e);
+                                    } finally {
+                                        getInAppBillingService().dispose();
+                                        mainLatch.countDown();
+                                    }
+                                }
+                            }).start();
+                        } else {
+                            getInAppBillingService().dispose();
+                            mainLatch.countDown();
+                        }
                     }
                 });
                 try {
-                    if (mOptions.samsungCertificationEnabled) {
-                        mainLatch.await();
-                    } else {
-                        mainLatch.await(TIMEOUT_BILLING_SUPPORTED_MS, TimeUnit.MILLISECONDS);
-                    }
+                    mainLatch.await();
                 } catch (InterruptedException e) {
-                    Log.e(TAG, "isBillingAvailable failed", e);
+                    Log.e(TAG, "isBillingAvailable() interrupted", e);
                 }
-                if (resultFromMainThread[0] != null && resultFromMainThread[0].isSuccess()) {
-                    final CountDownLatch inventoryLatch = new CountDownLatch(1);
-                    new Thread(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (resultFromMainThread[0].isSuccess()) {
-                                try {
-                                    Inventory inventory = getInAppBillingService().queryInventory(true, OpenIabHelper.getAllStoreSkus(OpenIabHelper.NAME_SAMSUNG), null);
-                                    if (inventory.mSkuMap != null && inventory.mSkuMap.size() > 0) {
-                                        billingAvailable[0] = true;
-                                    }
-                                } catch (IabException e) {
-                                    Log.e(TAG, "isBillingAvailable() failed", e);
-                                } finally {
-                                    getInAppBillingService().dispose();
-                                    mBillingService = null;
-                                }
-                            }
-                            inventoryLatch.countDown();
-                        }
-                    }).start();
-                    try {
-                        if (mOptions.samsungCertificationEnabled) {
-                            inventoryLatch.await();
-                        } else {
-                            inventoryLatch.await(TIMEOUT_BILLING_SUPPORTED_MS, TimeUnit.MILLISECONDS);
-                        }
-                    } catch (InterruptedException e) {
-                        Log.e(TAG, "isBillingAvailable() failed", e);
-                    }
-                } else {
-                    getInAppBillingService().dispose();
-                    mBillingService = null;
-                }
-                return mBillingAvailable = billingAvailable[0] != null;
+                return mBillingAvailable = billingAvailable[0];
             } else {
                 return mBillingAvailable = false;
             }
