@@ -66,16 +66,16 @@ public class SamsungApps extends DefaultAppstore {
     public static final String IAP_SERVICE_NAME = "com.sec.android.iap.service.iapService";
 
     private AppstoreInAppBillingService mBillingService;
-    private Activity mActivity;
-    private Options mOptions;
+    private Activity context;
+    private Options options;
     //isSamsungTestMode = true -> always returns Samsung Apps is installer and billing is available
     public static boolean isSamsungTestMode;
     private boolean mDebugLog;
     private Boolean mBillingAvailable;
 
     public SamsungApps(Activity activity, Options options) {
-        this.mActivity = activity;
-        this.mOptions = options;
+        this.context = activity;
+        this.options = options;
     }
 
     @Override
@@ -95,18 +95,16 @@ public class SamsungApps extends DefaultAppstore {
             }
             boolean iapInstalled = true;
             try {
-                PackageManager packageManager = mActivity.getPackageManager();
-                packageManager.getApplicationInfo(IAP_PACKAGE_NAME, PackageManager.GET_META_DATA);
+                PackageManager pm = context.getPackageManager();
+                pm.getApplicationInfo(IAP_PACKAGE_NAME, PackageManager.GET_META_DATA);
             } catch (PackageManager.NameNotFoundException e) {
                 iapInstalled = false;
             }
             if (iapInstalled) {
                 try {
-                    Signature[] signatures = mActivity.getPackageManager().getPackageInfo(IAP_PACKAGE_NAME, PackageManager.GET_SIGNATURES).signatures;
-                    if (signatures != null) {
-                        if (signatures[0].hashCode() != IAP_SIGNATURE_HASHCODE) {
-                            iapInstalled = false;
-                        }
+                    Signature[] signatures = context.getPackageManager().getPackageInfo(IAP_PACKAGE_NAME, PackageManager.GET_SIGNATURES).signatures;
+                    if (signatures[0].hashCode() != IAP_SIGNATURE_HASHCODE) {
+                        iapInstalled = false;
                     }
                 } catch (Exception e) {
                     iapInstalled = false;
@@ -163,7 +161,7 @@ public class SamsungApps extends DefaultAppstore {
     @Override
     public AppstoreInAppBillingService getInAppBillingService() {
         if (mBillingService == null) {
-            mBillingService = new SamsungAppsBillingService(mActivity, mOptions);
+            mBillingService = new SamsungAppsBillingService(context, options);
         }
         return mBillingService;
     }
