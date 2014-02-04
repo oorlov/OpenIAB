@@ -16,6 +16,8 @@
 
 package org.onepf.oms.appstore;
 
+import android.app.Activity;
+import android.util.Log;
 import org.onepf.oms.Appstore;
 import org.onepf.oms.AppstoreInAppBillingService;
 import org.onepf.oms.DefaultAppstore;
@@ -25,15 +27,22 @@ import org.onepf.oms.OpenIabHelper.Options;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.pm.Signature;
+import org.onepf.oms.appstore.googleUtils.IabException;
+import org.onepf.oms.appstore.googleUtils.IabHelper;
+import org.onepf.oms.appstore.googleUtils.IabResult;
+import org.onepf.oms.appstore.googleUtils.Inventory;
+
+import java.util.concurrent.CountDownLatch;
+
 
 /**
  * <p>
- * {@link #isPackageInstaller(String)} - there is no known reliable way to understand 
- * SamsungApps is installer of Application   
+ * {@link #isPackageInstaller(String)} - there is no known reliable way to understand
+ * SamsungApps is installer of Application
  * If you want SamsungApps to be used for purhases specify it in preffered stores by
- * {@link OpenIabHelper#OpenIabHelper(Context, java.util.Map, String[])} </p>   
- * 
- * Supported purchase details   
+ * {@link OpenIabHelper#OpenIabHelper(Context, java.util.Map, String[])} </p>
+ * <p/>
+ * Supported purchase details
  * <pre>
  * PurchaseInfo(type:inapp): {
  *     "orderId"            :TPMTID20131011RUI0515895,    // Samsung's payment id
@@ -52,57 +61,96 @@ import android.content.pm.Signature;
  */
 public class SamsungApps extends DefaultAppstore {
     private static final String TAG = SamsungApps.class.getSimpleName();
-
     private static final int IAP_SIGNATURE_HASHCODE = 0x7a7eaf4b;
     public static final String IAP_PACKAGE_NAME = "com.sec.android.iap";
     public static final String IAP_SERVICE_NAME = "com.sec.android.iap.service.iapService";
 
     private AppstoreInAppBillingService mBillingService;
-    private Context context;
+    private Activity context;
     private Options options;
+    //isSamsungTestMode = true -> always returns Samsung Apps is installer and billing is available
+    public static boolean isSamsungTestMode;
+    private boolean mDebugLog;
+    private Boolean mBillingAvailable;
 
-    // isDebugMode = true -> always returns Samsung Apps is installer
-    static final boolean isDebugMode = false;
-
-    public SamsungApps(Context context, Options options) {
-        this.context = context;
+    public SamsungApps(Activity activity, Options options) {
+        this.context = activity;
         this.options = options;
     }
 
     @Override
     public boolean isPackageInstaller(String packageName) {
-        return isDebugMode; // currently there is no reliable way to understand it
+        return isSamsungTestMode; // currently there is no reliable way to understand it
     }
 
     /**
-     * @return true if Samsung Apps is installed in the system
+     * @return true if Samsung Apps is installed in the system and a returned inventory contains info about the app's skus
      */
     @Override
-    public boolean isBillingAvailable(String packageName) {
-        boolean iapInstalled = true;
-        try {
-            PackageManager pm = context.getPackageManager();
-            pm.getApplicationInfo(IAP_PACKAGE_NAME, PackageManager.GET_META_DATA);
-        } catch (PackageManager.NameNotFoundException e) {
-            iapInstalled = false;
-        }
-        if (iapInstalled) {
+    public boolean isBillingAvailable(final String packageName) {
+        if (mBillingAvailable == null) {
+            if (isSamsungTestMode) {
+                if (mDebugLog) Log.d(TAG, "isBillingAvailable() billing is supported in test mode.");
+                return true;
+            }
+            boolean iapInstalled = true;
             try {
-                Signature[] signatures = context.getPackageManager().getPackageInfo(IAP_PACKAGE_NAME, PackageManager.GET_SIGNATURES).signatures;
-                if (signatures[0].hashCode() != IAP_SIGNATURE_HASHCODE) {
-                    iapInstalled = false;
-                }
-            } catch (Exception e) {
+                PackageManager pm = context.getPackageManager();
+                pm.getApplicationInfo(IAP_PACKAGE_NAME, PackageManager.GET_META_DATA);
+            } catch (PackageManager.NameNotFoundException e) {
                 iapInstalled = false;
             }
+            if (iapInstalled) {
+                try {
+                    Signature[] signatures = context.getPackageManager().getPackageInfo(IAP_PACKAGE_NAME, PackageManager.GET_SIGNATURES).signatures;
+                    if (signatures[0].hashCode() != IAP_SIGNATURE_HASHCODE) {
+                        iapInstalled = false;
+                    }
+                } catch (Exception e) {
+                    iapInstalled = false;
+                }
+            }
+            if (iapInstalled) {
+                final Boolean billingAvailable[] = {false};
+                final CountDownLatch mainLatch = new CountDownLatch(1);
+                getInAppBillingService().startSetup(new IabHelper.OnIabSetupFinishedListener() {
+                    @Override
+                    public void onIabSetupFinished(final IabResult result) {
+                        if (result.isSuccess()) {
+                            new Thread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    try {
+                                        Inventory inventory = getInAppBillingService().queryInventory(true, OpenIabHelper.getAllStoreSkus(OpenIabHelper.NAME_SAMSUNG), null);
+                                        if (inventory.mSkuMap != null && inventory.mSkuMap.size() > 0) {
+                                            billingAvailable[0] = true;
+                                        }
+                                    } catch (IabException e) {
+                                        Log.e(TAG, "isBillingAvailable() failed", e);
+                                    } finally {
+                                        getInAppBillingService().dispose();
+                                        mainLatch.countDown();
+                                    }
+                                }
+                            }).start();
+                        } else {
+                            getInAppBillingService().dispose();
+                            mainLatch.countDown();
+                        }
+                    }
+                });
+                try {
+                    mainLatch.await();
+                } catch (InterruptedException e) {
+                    Log.e(TAG, "isBillingAvailable() interrupted", e);
+                }
+                return mBillingAvailable = billingAvailable[0];
+            } else {
+                return mBillingAvailable = false;
+            }
+        } else {
+            return mBillingAvailable;
         }
-//        if (!iapInstalled) {
-//            Intent intent = new Intent();
-//            intent.setData(Uri.parse("samsungapps://ProductDetail/com.sec.android.iap"));
-//            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
-//            mContext.startActivity(intent);
-//        }
-        return isDebugMode || iapInstalled;
     }
 
     @Override

@@ -14,7 +14,7 @@
  *        limitations under the License.
  ******************************************************************************/
 
-        package org.onepf.oms.appstore;
+package org.onepf.oms.appstore;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -67,7 +67,7 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
     public static final int IAP_MODE_COMMERCIAL = 0;
     public static final int IAP_MODE_TEST_SUCCESS = 1;
     public static final int IAP_MODE_TEST_FAIL = -1;
-    private static final int CURRENT_MODE = SamsungApps.isDebugMode ? IAP_MODE_TEST_SUCCESS : IAP_MODE_COMMERCIAL;
+    private static final int CURRENT_MODE = SamsungApps.isSamsungTestMode ? IAP_MODE_TEST_SUCCESS : IAP_MODE_COMMERCIAL;
 
     public static final String IAP_SERVICE_NAME = "com.sec.android.iap.service.iapService";
     public static final String ACCOUNT_ACTIVITY_NAME = "com.sec.android.iap.activity.AccountActivity";
@@ -116,8 +116,8 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
     // ========================================================================
     // define request code for IAPService.
     // ========================================================================
-    public static final int REQUEST_CODE_IS_IAP_PAYMENT            = 1;
-    public static final int REQUEST_CODE_IS_ACCOUNT_CERTIFICATION  = 899;
+    public static final int REQUEST_CODE_IS_IAP_PAYMENT = 1;
+    public static final int REQUEST_CODE_IS_ACCOUNT_CERTIFICATION = 899;
 
     // ========================================================================
     // define status code passed to 3rd party application
@@ -133,10 +133,10 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
     public static final int IAP_ERROR_CONFIRM_INBOX = -1006;
     // ========================================================================
 
-    public boolean mIsBind = false;
-    private IAPConnector mIapConnector = null;
-    private Context mContext;
-    private Options options;
+    private volatile boolean mIsBound;
+    private IAPConnector mIapConnector;
+    private Activity mContext;
+    private Options mOptions;
     private ServiceConnection mServiceConnection;
     private String mPurchasingItemType;
 
@@ -148,19 +148,22 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
     private String mItemGroupId;
     private String mExtraData;
 
-    public SamsungAppsBillingService(Context context, Options options) {
+    public SamsungAppsBillingService(Activity context, Options options) {
         this.mContext = context;
-        this.options = options;
+        this.mOptions = options;
     }
 
     @Override
     public void startSetup(final OnIabSetupFinishedListener listener) {
         this.setupListener = listener;
-
-        ComponentName com = new ComponentName(SamsungApps.IAP_PACKAGE_NAME, ACCOUNT_ACTIVITY_NAME);
-        Intent intent = new Intent();
-        intent.setComponent(com);
-        ((Activity)mContext).startActivityForResult(intent, options.samsungCertificationRequestCode);
+        if (mOptions.samsungCertificationEnabled) {
+            ComponentName com = new ComponentName(SamsungApps.IAP_PACKAGE_NAME, ACCOUNT_ACTIVITY_NAME);
+            Intent intent = new Intent();
+            intent.setComponent(com);
+            mContext.startActivityForResult(intent, mOptions.samsungCertificationRequestCode);
+        } else {
+            bindIapService();
+        }
     }
 
     @Override
@@ -257,7 +260,7 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
 
     @Override
     public boolean handleActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == options.samsungCertificationRequestCode) {
+        if (requestCode == mOptions.samsungCertificationRequestCode) {
             if (resultCode == Activity.RESULT_OK) {
                 bindIapService();
             } else if (resultCode == Activity.RESULT_CANCELED) {
@@ -330,27 +333,20 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
 
     @Override
     public void dispose() {
-        if (mContext != null && mServiceConnection != null) {
-            mContext.unbindService(mServiceConnection);
+        if (mServiceConnection != null && mIsBound) {
+            mContext.getApplicationContext().unbindService(mServiceConnection);
+            mIsBound = false;
         }
         mServiceConnection = null;
         mIapConnector = null;
     }
 
-    private String getItemGroupId(String sku) {
-        String[] skuParts = sku.split("/");
-        if (skuParts.length != 2) {
-            throw new IllegalStateException("Samsung SKU must contain ITEM_GROUP_ID and ITEM_ID");
-        }
-        return skuParts[0];
+    private static String getItemGroupId(String sku) {
+        return sku.split("/")[0];
     }
 
-    private String getItemId(String sku) {
-        String[] skuParts = sku.split("/");
-        if (skuParts.length != 2) {
-            throw new IllegalStateException("Samsung SKU must contain ITEM_GROUP_ID and ITEM_ID");
-        }
-        return skuParts[1];
+    private static String getItemId(String sku) {
+        return sku.split("/")[1];
     }
 
     private void bindIapService() {
@@ -367,12 +363,10 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
             }
             @Override
             public void onServiceDisconnected(ComponentName name) {
-                mIapConnector = null;
-                mServiceConnection = null;
             }
         };
         Intent serviceIntent = new Intent(IAP_SERVICE_NAME);
-        mContext.bindService(serviceIntent, mServiceConnection, Context.BIND_AUTO_CREATE);
+        mIsBound = mContext.getApplicationContext().bindService(serviceIntent, mServiceConnection, Context.BIND_AUTO_CREATE);
     }
 
 
@@ -390,7 +384,7 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
                 }
             }
         } catch (RemoteException e) {
-            if (mDebugLog) Log.d(TAG, "Init IAP: " + e.getMessage());
+            Log.e(TAG, "Init IAP: " + e.getMessage());
         }
         setupListener.onIabSetupFinished(new IabResult(errorCode, errorMsg));
     }

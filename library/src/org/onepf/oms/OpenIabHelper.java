@@ -27,6 +27,7 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import android.text.TextUtils;
 import org.onepf.oms.appstore.AmazonAppstore;
 import org.onepf.oms.appstore.GooglePlay;
 import org.onepf.oms.appstore.OpenAppstore;
@@ -337,7 +338,7 @@ public class OpenIabHelper {
                     if (getAllStoreSkus(NAME_SAMSUNG).size() > 0) {  
                         // SamsungApps shows lot of UI stuff during init 
                         // try it only if samsung SKUs are specified
-                        stores2check.add(new SamsungApps(context, options));
+                        stores2check.add(new SamsungApps((Activity)context, options));
                     }
                 }
                 
@@ -404,7 +405,12 @@ public class OpenIabHelper {
                 }
             }
         }
-        
+        List<String> allStoreSkus = getAllStoreSkus(OpenIabHelper.NAME_SAMSUNG);
+        if (!allStoreSkus.isEmpty()) {
+            for (String sku : allStoreSkus) {
+                checkSamsungSku(sku);
+            }
+        }
     }
 
     protected void fireSetupFinished(final IabHelper.OnIabSetupFinishedListener listener, final IabResult result) {
@@ -533,7 +539,7 @@ public class OpenIabHelper {
                             }
                             storeRemains.countDown();
                         }
-                    }, "inv-check[" + appstore.getAppstoreName()+ "]").start();;
+                    }, "inv-check[" + appstore.getAppstoreName()+ "]").start();
                 }
             });
         }
@@ -883,6 +889,21 @@ public class OpenIabHelper {
         if (mDebugLog) Log.w(TAG, "In-app billing warning: " + msg);
     }
 
+    private static void checkSamsungSku(String sku) {
+        String[] skuParts = sku.split("/");
+        if (skuParts.length != 2) {
+            throw new IllegalArgumentException("Samsung SKU must contain ITEM_GROUP_ID and ITEM_ID.");
+        }
+        for (int i = 0; i < skuParts.length; i++) {
+            if (!TextUtils.isDigitsOnly(skuParts[i])) {
+                if (i == 0) {
+                    throw new IllegalArgumentException("Samsung SKU must contain numeric ITEM_GROUP_ID.");
+                } else if (i == 1) {
+                    throw new IllegalArgumentException("Samsung SKU must contain numeric ITEM_ID.");
+                }
+            }
+        }
+    }
 
     private static String setupStateToString(int setupState) {
         String state;
@@ -998,6 +1019,11 @@ public class OpenIabHelper {
          */
         public String[] prefferedStoreNames = new String[] {};
         
+        /**
+         * Used for SamsungApps setup. Indicates whether the setup activity will be shown or not.
+         */
+        public boolean samsungCertificationEnabled = false;
+
         /** Used for SamsungApps setup. Specify your own value if default one interfere your code.
          * <p>default value is {@link SamsungAppsBillingService#REQUEST_CODE_IS_ACCOUNT_CERTIFICATION} */
         public int samsungCertificationRequestCode = SamsungAppsBillingService.REQUEST_CODE_IS_ACCOUNT_CERTIFICATION;
