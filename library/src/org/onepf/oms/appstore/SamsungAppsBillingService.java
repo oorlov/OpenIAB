@@ -58,7 +58,7 @@ import com.sec.android.iap.IAPConnector;
 public class SamsungAppsBillingService implements AppstoreInAppBillingService {
     private static final int ITEM_RESPONSE_COUNT = 100;
 
-    private static final boolean mDebugLog = false;
+    private static final boolean mDebugLog = true;
     private static final String TAG = SamsungAppsBillingService.class.getSimpleName();
 
     private static final int HONEYCOMB_MR1 = 12;
@@ -67,7 +67,8 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
     public static final int IAP_MODE_COMMERCIAL = 0;
     public static final int IAP_MODE_TEST_SUCCESS = 1;
     public static final int IAP_MODE_TEST_FAIL = -1;
-    private static final int CURRENT_MODE = SamsungApps.isSamsungTestMode ? IAP_MODE_TEST_SUCCESS : IAP_MODE_COMMERCIAL;
+//    private static final int CURRENT_MODE = SamsungApps.isSamsungTestMode ? IAP_MODE_TEST_SUCCESS : IAP_MODE_COMMERCIAL;
+    private static final int CURRENT_MODE = IAP_MODE_COMMERCIAL;
 
     public static final String IAP_SERVICE_NAME = "com.sec.android.iap.service.iapService";
     public static final String ACCOUNT_ACTIVITY_NAME = "com.sec.android.iap.activity.AccountActivity";

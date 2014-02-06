@@ -69,9 +69,11 @@ public class SamsungApps extends DefaultAppstore {
     private AppstoreInAppBillingService billingService;
     private Activity activity;
     private Options options;
-    //isSamsungTestMode = true -> always returns Samsung Apps is installer and billing is available
+    
+    // isSamsungTestMode = true -> always returns Samsung Apps is installer and billing is available
     public static boolean isSamsungTestMode;
     private boolean debugLog;
+    
     private Boolean isBillingAvailable;
 
     public SamsungApps(Activity activity, Options options) {
@@ -89,69 +91,67 @@ public class SamsungApps extends DefaultAppstore {
      */
     @Override
     public boolean isBillingAvailable(String packageName) {
-        if (isBillingAvailable == null) {
-            if (isSamsungTestMode) {
-                if (debugLog) Log.d(TAG, "isBillingAvailable() billing is supported in test mode.");
-                return true;
-            }
-            boolean iapInstalled = true;
-            try {
-            PackageManager pm = activity.getPackageManager();
-            pm.getApplicationInfo(IAP_PACKAGE_NAME, PackageManager.GET_META_DATA);
-            } catch (PackageManager.NameNotFoundException e) {
-                iapInstalled = false;
-            }
-            if (iapInstalled) {
-                try {
-                    Signature[] signatures = activity.getPackageManager().getPackageInfo(IAP_PACKAGE_NAME, PackageManager.GET_SIGNATURES).signatures;
-                if (signatures[0].hashCode() != IAP_SIGNATURE_HASHCODE) {
-                    iapInstalled = false;
-                }
-            } catch (Exception e) {
-                iapInstalled = false;
-            }
-        }
-            if (iapInstalled) {
-                final Boolean billingAvailable[] = {false};
-                final CountDownLatch mainLatch = new CountDownLatch(1);
-                getInAppBillingService().startSetup(new IabHelper.OnIabSetupFinishedListener() {
-                    @Override
-                    public void onIabSetupFinished(final IabResult result) {
-                        if (result.isSuccess()) {
-                            new Thread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    try {
-                                        Inventory inventory = getInAppBillingService().queryInventory(true, OpenIabHelper.getAllStoreSkus(OpenIabHelper.NAME_SAMSUNG), null);
-                                        if (inventory.mSkuMap != null && inventory.mSkuMap.size() > 0) {
-                                            billingAvailable[0] = true;
-                                        }
-                                    } catch (IabException e) {
-                                        Log.e(TAG, "isBillingAvailable() failed", e);
-                                    } finally {
-                                        getInAppBillingService().dispose();
-                                        mainLatch.countDown();
-                                    }
-                                }
-                            }).start();
-                        } else {
-                            getInAppBillingService().dispose();
-                            mainLatch.countDown();
-                        }
-                    }
-                });
-                try {
-                    mainLatch.await();
-                } catch (InterruptedException e) {
-                    Log.e(TAG, "isBillingAvailable() interrupted", e);
-                }
-                return isBillingAvailable = billingAvailable[0];
-            } else {
-                return isBillingAvailable = false;
-            }
-        } else {
+        if (isBillingAvailable != null) {
             return isBillingAvailable;
         }
+        
+        if (isSamsungTestMode) {
+            if (debugLog) Log.d(TAG, "isBillingAvailable() billing is supported in test mode.");
+            isBillingAvailable = true;
+            return isBillingAvailable;
+        }
+
+        boolean iapInstalled = false;
+        
+        try {
+            PackageManager pm = activity.getPackageManager();
+            pm.getApplicationInfo(IAP_PACKAGE_NAME, PackageManager.GET_META_DATA);
+            Signature[] signatures = activity.getPackageManager().getPackageInfo(IAP_PACKAGE_NAME, PackageManager.GET_SIGNATURES).signatures;
+            if (signatures[0].hashCode() == IAP_SIGNATURE_HASHCODE) {
+                iapInstalled = true;
+            }
+        } catch (Exception e) {
+            if (debugLog) Log.d(TAG, "isBillingAvailable() Samsung IAP Service is not installed");
+        }
+
+        isBillingAvailable = false;
+        if (!iapInstalled) {
+            return isBillingAvailable;
+        }
+
+        final CountDownLatch mainLatch = new CountDownLatch(1);
+        getInAppBillingService().startSetup(new IabHelper.OnIabSetupFinishedListener() {
+            public void onIabSetupFinished(final IabResult result) {
+                if (result.isSuccess()) {
+                    new Thread(new Runnable() {
+                        public void run() {
+                            try {
+                                Inventory inventory = getInAppBillingService().queryInventory(true, OpenIabHelper.getAllStoreSkus(OpenIabHelper.NAME_SAMSUNG), null);
+                                if (inventory.mSkuMap != null && inventory.mSkuMap.size() > 0) {
+                                    isBillingAvailable = true;
+                                }
+                            } catch (IabException e) {
+                                Log.e(TAG, "isBillingAvailable() failed", e);
+                            } finally {
+                                getInAppBillingService().dispose();
+                                mainLatch.countDown();
+                            }
+                        }
+                    }).start();
+                } else {
+                    getInAppBillingService().dispose();
+                    mainLatch.countDown();
+                }
+            }
+        });
+
+        try {
+            mainLatch.await();
+        } catch (InterruptedException e) {
+            Log.e(TAG, "isBillingAvailable() interrupted", e);
+        }
+
+        return isBillingAvailable;
     }
 
     @Override
