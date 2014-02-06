@@ -67,8 +67,7 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
     public static final int IAP_MODE_COMMERCIAL = 0;
     public static final int IAP_MODE_TEST_SUCCESS = 1;
     public static final int IAP_MODE_TEST_FAIL = -1;
-//    private static final int CURRENT_MODE = SamsungApps.isSamsungTestMode ? IAP_MODE_TEST_SUCCESS : IAP_MODE_COMMERCIAL;
-    private static final int CURRENT_MODE = IAP_MODE_COMMERCIAL;
+    private static final int CURRENT_MODE = SamsungApps.isSamsungTestMode ? IAP_MODE_TEST_SUCCESS : IAP_MODE_COMMERCIAL;
 
     public static final String IAP_SERVICE_NAME = "com.sec.android.iap.service.iapService";
     public static final String ACCOUNT_ACTIVITY_NAME = "com.sec.android.iap.activity.AccountActivity";
