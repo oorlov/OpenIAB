@@ -266,13 +266,14 @@ public class OpenIabHelper {
      * @param context if you want to support Samsung Apps you must pass an Activity, in other cases any context is acceptable
      */
     public OpenIabHelper(Context context, Map<String, String> storeKeys, String[] prefferedStores, Appstore[] availableStores) {
-        checkForSamsungSpecialConditions(context);
         this.context = context;
         this.options = new Options();
         
         options.storeKeys = storeKeys;
         options.prefferedStoreNames = prefferedStores != null ? prefferedStores : options.prefferedStoreNames;
         options.availableStores = availableStores != null ? new ArrayList<Appstore>(Arrays.asList(availableStores)) : null;
+        
+        checkOptions(options, context);
     }
 
     /**
@@ -300,7 +301,7 @@ public class OpenIabHelper {
      * @param context if you want to support Samsung Apps you must pass an Activity, in other cases any context is acceptable
      */
     public OpenIabHelper(Context context, Options options) {
-        checkForSamsungSpecialConditions(context);
+        checkOptions(options, context);
         this.context = context;
         this.options = options;
     }
@@ -319,8 +320,7 @@ public class OpenIabHelper {
             String state = setupStateToString(setupState);
             throw new IllegalStateException("Couldn't be set up. Current state: " + state);
         }
-        this.notifyHandler = new Handler();
-        checkOptions(options);
+        this.notifyHandler = new Handler();        
         started = System.currentTimeMillis();
         new Thread(new Runnable() {
             public void run() {
@@ -398,6 +398,10 @@ public class OpenIabHelper {
 
     /** Check options are valid */
     public static void checkOptions(Options options) {
+        checkOptions(options, null);
+    }
+
+    private static void checkOptions(Options options, Context context) {
         if (options.verifyMode != Options.VERIFY_SKIP && options.storeKeys != null) { // check publicKeys. Must be not null and valid
             for (Entry<String, String> entry : options.storeKeys.entrySet()) {
                 if (entry.getValue() == null) { 
@@ -412,9 +416,27 @@ public class OpenIabHelper {
         }
         // verify Samsung SKUs if defined
         List<String> allStoreSkus = getAllStoreSkus(OpenIabHelper.NAME_SAMSUNG);
-        if (!allStoreSkus.isEmpty()) {
+        if (!allStoreSkus.isEmpty()) { // it means that Samsung is among the candidates
             for (String sku : allStoreSkus) {
                 SamsungApps.checkSku(sku);
+            }
+            if (!(context instanceof Activity)) { 
+                // 
+                // Unfortunately, SamsungApps requires to launch their own "Certification Activity"
+                // in order to connect to billing service. So it's also needed for OpenIAB.
+                // 
+                // Because of SKU for SamsungApps are specified,   
+                // intance of Activity needs to be passed to OpenIAB constructor to launch 
+                // Samsung Cerfitication Activity.
+                // Activity also need to pass activityResult to OpenIABHelper.handleActivityResult() 
+                //  
+                // 
+                throw new IllegalArgumentException(
+                          "  Unfortunately, SamsungApps requires to launch their own Certification Activity "
+                        + "\nin order to connect to billing service. So it's also needed for OpenIAB."
+                        + "\nBecause of SKU for SamsungApps are specified, instance of Activity needs to be passed "
+                        + "\nto OpenIAB constructor to launch Samsung Cerfitication Activity."
+                        + "\nActivity also need to pass activityResult to OpenIABHelper.handleActivityResult().");
             }
         }
     }
@@ -909,16 +931,6 @@ public class OpenIabHelper {
             throw new IllegalStateException("Wrong setup state: " + setupState);
         }
         return state;
-    }
-
-    private void checkForSamsungSpecialConditions(Context context) {
-        List<String> allStoreSkus = getAllStoreSkus(OpenIabHelper.NAME_SAMSUNG);
-        if (!allStoreSkus.isEmpty()) { // it means that Samsung is among the candidates
-            if (!(context instanceof Activity)) {
-                // Dear developers, we've made a mistake in the first version of Samsung support. Now there is no way to fix it not changing the API. Sorry about this.
-                throw new IllegalStateException("To support Samsung context must be an Activity. Dear developers, we've made a mistake in the first version of Samsung support. Now there is no way to fix it not changing the API. Sorry about this.");
-            }
-        }
     }
 
     public interface OnInitListener {
