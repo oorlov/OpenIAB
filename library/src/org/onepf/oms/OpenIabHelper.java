@@ -80,7 +80,9 @@ public class OpenIabHelper {
      */
     private static final int INVENTORY_CHECK_TIMEOUT_MS = 10000;
     
+    /** Used for all communication with Android services  */
     private final Context context;
+    /** Necessary to initialize SamsungApps. For other stuff {@link #context} is used */
     private Activity activity;
     
     private Handler notifyHandler = null;
