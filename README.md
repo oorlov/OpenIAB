@@ -71,6 +71,36 @@ And register reciever for Amazon
     </intent-filter>
 </receiver>
 ```
+10. Add the following strings to your proguard config
+
+```
+# TStore
+-keep class com.skplanet.dodo.**{*;}
+-keep class com.skplanet.internal.dodo.**{*;}
+-keep class com.skplanet.internal.dodo.dev.**{*;}
+-keep class com.skplanet.internal.dodo.util.**{*;}
+-keep class com.skplanet.pmss.secure.**{*;}
+-keep public class android.net.http.SslError
+-keep public class android.webkit.WebViewClient
+-keep class com.tmoney.aidl.**{*;}
+-dontwarn android.webkit.WebView
+-dontwarn android.net.http.SslError
+-dontwarn android.webkit.WebViewClient
+-keepattributes Signature
+-dontshrink
+
+# AMAZON
+-dontwarn com.amazon.**
+-keep class com.amazon.** {*;}
+-keepattributes *Annotation*
+-dontoptimize
+
+# GOOGLE
+-keep class com.android.vending.billing.**
+
+# SAMSUNG
+-keep class com.sec.android.iap.**
+```
 
 Unity Plugin
 =====

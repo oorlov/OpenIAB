@@ -52,7 +52,7 @@ public class AmazonAppstore extends DefaultAppstore {
         if (sandboxMode != null) {
             return sandboxMode;
         }
-        sandboxMode = hasAmazonClasses();
+        sandboxMode = !hasAmazonClasses();
         if (mDebugLog) Log.d(TAG, "isPackageInstaller() sandBox: " + sandboxMode);
         return sandboxMode;
     }
