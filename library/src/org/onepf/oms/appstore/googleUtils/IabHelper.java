@@ -276,7 +276,10 @@ public class IabHelper implements AppstoreInAppBillingService {
         };
 
         Intent serviceIntent = getServiceIntent();
-        if (!mContext.getPackageManager().queryIntentServices(serviceIntent, 0).isEmpty()) {
+        if (!mContext
+                .getPackageManager()
+                .queryIntentServices(serviceIntent, 0)
+                .isEmpty()) {
             // service available to handle that Intent
             mContext.bindService(serviceIntent, mServiceConn, Context.BIND_AUTO_CREATE);
         } else {
