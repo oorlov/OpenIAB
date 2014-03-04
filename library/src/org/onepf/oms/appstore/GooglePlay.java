@@ -87,15 +87,9 @@ public class GooglePlay extends DefaultAppstore {
     public boolean isBillingAvailable(final String packageName) {
         if (mDebugLog) Log.d(TAG, "isBillingAvailable() packageName: " + packageName);
         if (billingAvailable != null) return billingAvailable; // return previously checked result
-        PackageManager packageManager = context.getPackageManager();
-        boolean packageExists = packageExists(packageManager, ANDROID_INSTALLER) || packageExists(packageManager, GOOGLE_INSTALLER);
-        if (!packageExists) {
-            if (mDebugLog) {
-                Log.d(TAG, String.format("%s and %s packages were not found.", GOOGLE_INSTALLER, ANDROID_INSTALLER));
-            }
-        }
         billingAvailable = false;
-        if (packageExists) {
+        PackageManager packageManager = context.getPackageManager();
+        if (packageExists(packageManager, ANDROID_INSTALLER) || packageExists(packageManager, GOOGLE_INSTALLER)) {
             final Intent intent = new Intent(GooglePlay.VENDING_ACTION);
             intent.setPackage(GooglePlay.ANDROID_INSTALLER);
             if (!context.getPackageManager().queryIntentServices(intent, 0).isEmpty()) {
@@ -153,6 +147,9 @@ public class GooglePlay extends DefaultAppstore {
             packageManager.getPackageInfo(packageName, 0);
             return true;
         } catch (PackageManager.NameNotFoundException ignored) {
+            if (mDebugLog) {
+                Log.d(TAG, String.format("%s package was not found.", packageName));
+            }
             return false;
         }
     }
