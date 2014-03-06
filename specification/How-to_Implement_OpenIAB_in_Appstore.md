@@ -63,7 +63,8 @@ should return intent to show developer’s page UI in Store Application. This me
 Implementation of IOpenInAppBillingService.aidl interface.
 -------------
 
-Store application must provide a bindable service that binded by intent returned by `getBillingServiceIntent()` and implement API described in [IOpenAppBillingService.aidl](../library/src/org/onepf/oms/IOpenAppBillingService.aidl) file.
+Store application must provide a bindable service that binded by intent returned by `getBillingServiceIntent()` and implement API described in [IOpenAppBillingService.aidl](../library/src/org/onepf/oms/IOpenInAppBillingService.aidl) file.
+
 
 
 Following methods must be implemented to work with the OpenIAB correctly:
