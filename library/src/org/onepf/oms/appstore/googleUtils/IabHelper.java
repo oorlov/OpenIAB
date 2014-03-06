@@ -82,8 +82,6 @@ public class IabHelper implements AppstoreInAppBillingService {
      */
     public static final int QUERY_SKU_DETAILS_BATCH_SIZE = 20;
     
-    // Is debug logging enabled?
-    boolean mDebugLog = false;
     String mDebugTag = TAG;
 
     // Is setup done?
@@ -181,18 +179,6 @@ public class IabHelper implements AppstoreInAppBillingService {
         mSignatureBase64 = base64PublicKey;
         this.appstore = appstore;
         logDebug("IAB helper created.");
-    }
-
-    /**
-     * Enables or disable debug logging through LogCat.
-     */
-    public void enableDebugLogging(boolean enable, String tag) {
-        mDebugLog = enable;
-        mDebugTag = tag;
-    }
-
-    public void enableDebugLogging(boolean enable) {
-        mDebugLog = enable;
     }
 
     /**
@@ -1038,7 +1024,7 @@ public class IabHelper implements AppstoreInAppBillingService {
     }
 
     public void logDebug(String msg) {
-        if (mDebugLog) Log.d(mDebugTag, msg);
+        if (isDebugLog()) Log.d(mDebugTag, msg);
     }
 
     void logError(String msg) {
@@ -1046,7 +1032,7 @@ public class IabHelper implements AppstoreInAppBillingService {
     }
 
     void logWarn(String msg) {
-        if (mDebugLog) Log.w(mDebugTag, "In-app billing warning: " + msg);
+        if (isDebugLog()) Log.w(mDebugTag, "In-app billing warning: " + msg);
     }
 
     boolean isValidDataSignature(String base64PublicKey, String purchaseData, String signature) {
@@ -1056,5 +1042,8 @@ public class IabHelper implements AppstoreInAppBillingService {
             logWarn("Purchase signature verification **FAILED**.");
         }
         return isValid;
+    }
+    private static boolean isDebugLog() {
+        return OpenIabHelper.isDebugLog();
     }
 }
