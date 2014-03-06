@@ -27,7 +27,7 @@ These interfaces can be found at Library project(org.onepf.oms package) in OpenI
 Implementation of IOpenAppstore.aidl interface
 -------------
 
-Store application must provide a bindable service that handles `org.onepf.oms.openappstore.BIND` intent and implement API described in [IOpenAppstore.aidl](library/src/org/onepf/oms/IOpenAppstore.aidl) file.
+Store application must provide a bindable service that handles `org.onepf.oms.openappstore.BIND` intent and implement API described in [IOpenAppstore.aidl](../library/src/org/onepf/oms/IOpenAppstore.aidl) file.
 
 Following methods must be implemented to work with the OpenIAB correctly:
 
@@ -63,7 +63,7 @@ should return intent to show developer’s page UI in Store Application. This me
 Implementation of IOpenInAppBillingService.aidl interface.
 -------------
 
-Store application must provide a bindable service that binded by intent returned by `getBillingServiceIntent()` and implement API described in [IOpenAppBillingService.aidl](library/src/org/onepf/oms/IOpenAppBillingService.aidl) file.
+Store application must provide a bindable service that binded by intent returned by `getBillingServiceIntent()` and implement API described in [IOpenAppBillingService.aidl](../library/src/org/onepf/oms/IOpenAppBillingService.aidl) file.
 
 
 Following methods must be implemented to work with the OpenIAB correctly:
