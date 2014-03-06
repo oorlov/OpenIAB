@@ -31,32 +31,32 @@ Store application must provide a bindable service that handles `org.onepf.oms.op
 
 Following methods must be implemented to work with the OpenIAB correctly:
 
-### String getAppstoreName();
+#### String getAppstoreName();
 Every OpenStore implementation must provide their unique name. It is required for OpenId to map developer’s In-App items (SKU) to specific market.  
 
 **Uniqueness.** It is strictly required to have unique name here to OpenIAB works properly, so it is recomended to use name like `com.companyname.storename`.
 
-### boolean isPackageInstaller(String packageName);
+#### boolean isPackageInstaller(String packageName);
 Must return `true` if OpenStore is installer of package described by packageName. By installer means that package was installed or updated by Store application. 
 
-### boolean isBillingAvailable(String packageName);
+#### boolean isBillingAvailable(String packageName);
 Must return `true` if application with packageName is listed on OpenStore backend and In-App items for app are published  and ready for use. 
 
-### int getPackageVersion(String packageName);
+#### int getPackageVersion(String packageName);
 Must return version of application with packageName is listed on OpenStore backend for current device.
 
-###Intent getBillingServiceIntent();
+####Intent getBillingServiceIntent();
 Should return intent to be used for binding IOpenInAppBillingService. 
 
 **Null Intent.** This method returns `null` means that Store doesn’t support In-App billing. In that case any call of `isBillingAvailable()` must return `false`;  
 
-### Intent getProductPageIntent(String packageName); 
+#### Intent getProductPageIntent(String packageName); 
 Should return intent to show application page in Store Application. This method is optional, return `null` if you don’t need to implement this feature.
 
-### Intent getRateItPageIntent(String packageName);
+#### Intent getRateItPageIntent(String packageName);
 should return intent to show rate application UI in Store Application. This method is optional, return `null` if you don’t need to implement this feature.
 
-### Intent getSameDeveloperPageIntent(String packageName)
+#### Intent getSameDeveloperPageIntent(String packageName)
 should return intent to show developer’s page UI in Store Application. This method is optional, return `null` if you don’t need to implement this feature.
 
 
@@ -70,7 +70,7 @@ Store application must provide a bindable service that binded by intent returned
 Following methods must be implemented to work with the OpenIAB correctly:
 
 
-### int isBillingSupported(int apiVersion, String packageName, String type);
+#### int isBillingSupported(int apiVersion, String packageName, String type);
 Checks support for the requested API version, package and in-app type (could be "inapp" for one-time purchases or "subs" for subscriptions). 
 
 |name|value|description|
@@ -82,7 +82,7 @@ Checks support for the requested API version, package and in-app type (could be 
 Must return RESULT_OK(0) if billing is supported, or corresponding result code on failure (described in AIDL file)
 
 
-### Bundle getSkuDetails(int apiVersion, String packageName, String type, in Bundle skusBundle);
+#### Bundle getSkuDetails(int apiVersion, String packageName, String type, in Bundle skusBundle);
 Provide details of a list of SKUs available on OpenStore backend for current package.
 
 |name|value|description|
@@ -97,7 +97,7 @@ Must return Bundle containing the following key-value pairs
 * "RESPONSE_CODE" with int value, RESULT_OK(0) if success, other response codes on failure
 * "DETAILS_LIST" with a StringArrayList containing purchase information in JSON format with following fields: productId, type, price, title, description. See JSON sample of sku details below.
 
-##### JSON sample of sku details:
+###### JSON sample of sku details:
 ```
 { 
 	"productId" : "exampleSku", 
@@ -110,7 +110,7 @@ Must return Bundle containing the following key-value pairs
 
 
 
-### Bundle getBuyIntent(int apiVersion, String packageName, String sku, String type, String developerPayload);
+#### Bundle getBuyIntent(int apiVersion, String packageName, String sku, String type, String developerPayload);
 Returns a pending intent to launch the purchase flow for an in-app item by providing a SKU, the type, a unique purchase token and an optional developer payload.          
 
 |name|value|description|
@@ -132,7 +132,7 @@ Must return Bundle containing the following key-value pairs
 * "INAPP_PURCHASE_DATA" - Purchase receipt. String in JSON format with following fields: orderId, packageName, productId, purchaseTime, purchaseToken, developerPayload. See JSON sample of purchase receipt below.
 * "INAPP_DATA_SIGNATURE" - String containing the signature of the purchase data that was signed with app-specific keys.
 
-##### JSON sample of purchase receipt:
+###### JSON sample of purchase receipt:
 ```
 {
 	"orderId":"12999763169054705758.1371079406387615",
@@ -144,7 +144,7 @@ Must return Bundle containing the following key-value pairs
 }
 ```    
 
-### Bundle getPurchases(int apiVersion, String packageName, String type, String continuationToken);
+#### Bundle getPurchases(int apiVersion, String packageName, String type, String continuationToken);
 Returns the current SKUs owned by the user of the type and package name specified along with purchase information and a signature of the data to be validated.
 
 |name|value|description|
@@ -162,7 +162,7 @@ Must return Bundle containing the following key-value pairs
 * "INAPP_DATA_SIGNATURE_LIST"- StringArrayList containing the signatures of the purchase information
 * "INAPP_CONTINUATION_TOKEN" - String containing a continuation token for the next set of in-app purchases. Only set if the user has more owned skus than the current list.
 
-### int consumePurchase(int apiVersion, String packageName, String purchaseToken);
+#### int consumePurchase(int apiVersion, String packageName, String purchaseToken);
 Consume the last purchase of the given SKU. This will result in this item being removed
 from all subsequent responses to getPurchases() and allow re-purchase of this item.
 
@@ -175,7 +175,7 @@ from all subsequent responses to getPurchases() and allow re-purchase of this it
 Must return 0 if consumption succeeded. Appropriate error values for failures.
 
 
-### Notes:
+#### Notes:
 **Offline mode.** It’s better to cache all inventory of user for every app in Native Client cache, so applications with in-app purchases can start and provide all purchased features when device has no internet connection
 
 
@@ -189,23 +189,23 @@ Step 3. Server API for purchases and subscriptions verification
 -------------
 To provide developers ability verify purchases with their security server, OpenStore should provide following REST API methods:
 
-### In-App Purchase status method
+#### In-App Purchase status method
 Provide developer the purchase and consumption status of an inapp item
 
-##### Request
+###### Request
 
 ```
 GET https://<Your API server address>/{packageName}/inapp/{productId}/purchases/{token}
 ```
 
-##### Parameters
+###### Parameters
 |name|value|description|
 |----|-----|-----------|
 |packageName|string|The package name of the application the inapp product was sold in (for example, 'com.some.thing').|
 |productId|string|The inapp product SKU (for example, 'com.some.thing.inapp1').|
 |token|string|The token provided to the user's device when the inapp product was purchased.|
 
-##### Response 
+###### Response 
 If successful, this method should return response as JSON string in the following format 
  
 ```
@@ -226,23 +226,23 @@ If successful, this method should return response as JSON string in the followin
 |consuptionState|int|Consumption state. Possible values: 0 - Consumed, 1 - to be consumed|
 |developerPayload|string|A developer-specified string that contains supplemental information about an order.|
 
-### Subscription status method
+#### Subscription status method
 Provide developer a user's subscription purchase status and returns its expiry time.
 
-##### Request
+###### Request
 
 ```
 GET https://<Your API server address>/{packageName}/subscriptions/{subscriptionId}/purchases/{token}
 ```
 
-##### Parameters
+###### Parameters
 |name|value|description|
 |----|-----|-----------|
 |packageName|string|The package name of the application wich this subscription was purchased (for example, 'com.some.thing').|
 |subscriptionId|string|The purchased subscription ID (for example, 'monthly001').|
 |token|string|The token provided to the user's device when the subscription was purchased.|
 
-##### Response 
+###### Response 
  If successful, this method should return response as JSON string in the following format 
  
 ```
@@ -261,26 +261,26 @@ GET https://<Your API server address>/{packageName}/subscriptions/{subscriptionI
 |validUntilTimestampMsec|long|Time at which the subscription will expire, in milliseconds since Epoch.|
 |autoRenewing|boolean|Whether the subscription will automatically be renewed when it reaches its current expiry time.|
 
-### Cancel Subscription method
+#### Cancel Subscription method
 Provide developer a user's subscription purchase status and returns its expiry time.
 
-##### Request
+###### Request
 
 ```
 POST https://<Your API server address>/{packageName}/subscriptions/{subscriptionId}/purchases/{token}/cancel
 ```
 
-##### Parameters
+###### Parameters
 |name|value|description|
 |----|-----|-----------|
 |packageName|string|The package name of the application wich this subscription was purchased (for example, 'com.some.thing').|
 |subscriptionId|string|The purchased subscription ID (for example, 'monthly001').|
 |token|string|The token provided to the user's device when the subscription was purchased.|
 
-##### Response 
+###### Response 
 If successful, this method should returns an empty response body.
 
-### Authorization
+#### Authorization
 Methods are desribed above must require authorization. Appstore should provide
 developer token to use as authorization token.
 
