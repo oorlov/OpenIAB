@@ -32,6 +32,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentSender.SendIntentException;
+import android.content.pm.ResolveInfo;
 import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.Handler;
@@ -262,7 +263,10 @@ public class IabHelper implements AppstoreInAppBillingService {
         };
 
         Intent serviceIntent = getServiceIntent();
-        if (!mContext.getPackageManager().queryIntentServices(serviceIntent, 0).isEmpty()) {
+        List <ResolveInfo> intentServices = mContext
+                .getPackageManager()
+                .queryIntentServices(serviceIntent, 0); 
+        if (intentServices != null && !intentServices.isEmpty()) {
             // service available to handle that Intent
             mContext.bindService(serviceIntent, mServiceConn, Context.BIND_AUTO_CREATE);
         } else {
