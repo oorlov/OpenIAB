@@ -104,6 +104,9 @@ https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/
 
     # SAMSUNG
     -keep class com.sec.android.iap.**
+
+    #FORTUMO
+    -keep class mp.** { *; }
     ```
 
 
@@ -132,7 +135,7 @@ Google Play
     otherwise verify purchases on your server side.
 
 
-3. In the proguard configuration file
+3. In the proguard config file add
 
     ```proguard
      # GOOGLE
@@ -170,7 +173,7 @@ Remember, the SKUs must be unique across your Amazon developer account.
     OpenIabHelper.mapSku(SKU_INFINITE_GAS, OpenIabHelper.NAME_AMAZON, "org.onepf.trivialdrive.amazon.infinite_gas");
     ```
 
-3. In the proguard configuration file add
+3. In the proguard config file add
 
     ```proguard
      # AMAZON
@@ -201,7 +204,7 @@ Samsung Apps
 3. Instantiate ``` new OpenIabHelper ``` using an Activity instance.
    Activity context is required to call  ``` startActivityForResult() ``` for SamsungAccount Activity.
 
-4. In the proguard configuration add
+4. In the proguard config file add
 
     ```proguard
     # SAMSUNG
@@ -272,7 +275,7 @@ T-Store
     OpenIabHelper.mapSku(SKU_INFINITE_GAS, OpenIabHelper.NAME_TSTORE, "tstore_sku_infinite_gas");
     ```
 
-3. In the proguard config add
+3. In the proguard config file add
 
     ```proguard
     # TStore
@@ -291,13 +294,13 @@ T-Store
     -dontshrink
     ```
 
-Support instructions for Fortumo carrier billing
-================================================
+Support instructions for Fortumo billing for Android and NOOK
+=============================================================
 
 Before start to work with OpenIab library
 -----------------------------------------
-Create a Fortumo account and add a required number of services. One service corresponds to one price, e.g. for 3 inapps with different prices you should create 3 different services.
-You can find all required instructions <a href="http://developers.fortumo.com/in-app-purchasing-on-android/service-setup/">here.</a>
+Create a Fortumo account and add a required number of <a href="http://developers.fortumo.com/in-app-purchasing-on-nook/">NOOK</a> and <a href="http://developers.fortumo.com/in-app-purchasing-on-android/">Android</a> services.
+One service corresponds to one price, e.g. for 3 in-apps with different prices you should create 3 different services.
 
 OpenIab setup
 -------------
@@ -330,7 +333,7 @@ OpenIab setup
                   android:configChanges="orientation|keyboardHidden|screenSize"/>
      ```
 
-4. In the code setup an Options object
+3. In the code setup an Options object
 
     ```java
     OpenIabHelper.Options options = new OpenIabHelper.Options();
@@ -344,10 +347,16 @@ OpenIab setup
     mHelper = new OpenIabHelper(this, options);
     ```
 
-5. Add <a href="https://github.com/onepf/AppDF/blob/xsd-for-inapps/specification/inapp-description.xsd">inapps_products.xml</a> (in-app products description in terms similar to Google Play) and
+4. Add <a href="https://github.com/onepf/AppDF/blob/xsd-for-inapps/specification/inapp-description.xsd">inapps_products.xml</a> (in-app products description in terms similar to Google Play) and
 <a href="https://github.com/onepf/AppDF/blob/xsd-for-inapps/specification/fortumo-products-description.xsd">fortumo_inapps_details.xml</a> (data about your Fortumo services) files to the assets folder.
 You can find a sample <a href="https://github.com/onepf/OpenIAB/tree/master/samples/trivialdrive/assets">here.</a>
 
+5. In the proguard config file add
+
+    ```proguard
+     # FORTUMO
+     -keep class mp.** { *; }
+     ```
 
 Unity Plugin
 =====
