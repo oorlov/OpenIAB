@@ -391,7 +391,7 @@ public class OpenIabHelper {
                             result = new IabResult(BILLING_RESPONSE_RESULT_OK, "Successfully initialized with non-equipped store: " + mAppstore.getAppstoreName());
                         } else {
                             if (!hasFortumoInSetup && options.supportFortumo) {
-                                mAppstore = FortumoStore.initFortumoStore(context, true);
+                                mAppstore = FortumoStore.initFortumoStore(context, false);
                                 if (null != mAppstore) {
                                     result = new IabResult(BILLING_RESPONSE_RESULT_OK, "Successfully initialized: " + mAppstore.getAppstoreName());
                                 }
