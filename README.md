@@ -348,15 +348,6 @@ OpenIab setup
 <a href="https://github.com/onepf/AppDF/blob/xsd-for-inapps/specification/fortumo-products-description.xsd">fortumo_inapps_details.xml</a> (data about your Fortumo services) files to the assets folder.
 You can find a sample <a href="https://github.com/onepf/OpenIAB/tree/master/samples/trivialdrive/assets">here.</a>
 
-Support instructions for Fortumo in-app purchasing on NOOK
-==========================================================
-Quite the same as Support instructions for Fortumo carrier billing.
-But in the AndroidManifest.xml add only 2 following permissions
-
-    ```xml
-    <uses-permission android:name="android.permission.INTERNET"/>
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
-    ```
 
 Unity Plugin
 =====
