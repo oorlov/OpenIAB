@@ -104,14 +104,17 @@ https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/
 
     # SAMSUNG
     -keep class com.sec.android.iap.**
+
+    #FORTUMO
+    -keep class mp.** { *; }
     ```
 
 
 Support instructions for the stores
-=====
+===================================
 
-Google Play support
--------------
+Google Play
+-----------
 1. Add the corresponding billing permission
 
     ```xml
@@ -132,7 +135,7 @@ Google Play support
     otherwise verify purchases on your server side.
 
 
-3. In the proguard configuration file
+3. In the proguard config file add
 
     ```proguard
      # GOOGLE
@@ -140,8 +143,8 @@ Google Play support
      ```
 
 
-Amazon support
--------------
+Amazon
+------
 1. In the AndroidManifest.xml add the corresponding billing permission
 
     ```xml
@@ -170,7 +173,7 @@ Remember, the SKUs must be unique across your Amazon developer account.
     OpenIabHelper.mapSku(SKU_INFINITE_GAS, OpenIabHelper.NAME_AMAZON, "org.onepf.trivialdrive.amazon.infinite_gas");
     ```
 
-3. In the proguard configuration file add
+3. In the proguard config file add
 
     ```proguard
      # AMAZON
@@ -180,13 +183,133 @@ Remember, the SKUs must be unique across your Amazon developer account.
     -dontoptimize
     ```
 
-Fortumo support
+Samsung Apps
+------------
+1. In the AndroidManifest.xml add the corresponding billing permission
+
+    ```xml
+     <uses-permission android:name="com.sec.android.iap.permission.BILLING" />
+    ```
+
+2. Map the SKUs if required.
+   Remember, Samsung Apps describes an item it terms of Item Group ID and Item ID.
+
+   ```java
+   //format "group_id/item_id"
+   OpenIabHelper.mapSku(SKU_PREMIUM, OpenIabHelper.NAME_SAMSUNG, "100000100696/000001003746");
+   OpenIabHelper.mapSku(SKU_GAS, OpenIabHelper.NAME_SAMSUNG, "100000100696/000001003744");
+   OpenIabHelper.mapSku(SKU_INFINITE_GAS, OpenIabHelper.NAME_SAMSUNG, "100000100696/000001003747");
+   ```
+
+3. Instantiate ``` new OpenIabHelper ``` using an Activity instance.
+   Activity context is required to call  ``` startActivityForResult() ``` for SamsungAccount Activity.
+
+4. In the proguard config file add
+
+    ```proguard
+    # SAMSUNG
+    -keep class com.sec.android.iap.**
+    ```
+
+
+Open Store
+----------
+1. Add the corresponding billing permission
+
+    ```xml
+    <uses-permission android:name="org.onepf.openiab.permission.BILLING" />
+    ```
+
+2. Provide a public key
+
+    ```java
+    Map<String, String> storeKeys = new HashMap<String, String>();
+    storeKeys.put(OpenIabHelper.OPEN_STORE_NAME, openStorePublicKey);
+    OpenIabHelper.Options options = new OpenIabHelper.Options();
+    options.storeKeys = storeKeys;
+    mHelper = new OpenIabHelper(this, options);
+    //or
+    mHelper = new OpenIabHelper(this, storeKeys);
+    ```
+otherwise verify purchases on your server side.
+
+3. Map the SKUs if required
+
+    ```java
+    OpenIabHelper.mapSku(SKU_PREMIUM, OpenIabHelper.OPEN_STORE_NAME, "org.onepf.trivialdrive.openstorename.premium");
+    OpenIabHelper.mapSku(SKU_GAS, OpenIabHelper.OPEN_STORE_NAME, "org.onepf.trivialdrive.openstorename.gas");
+    OpenIabHelper.mapSku(SKU_INFINITE_GAS, OpenIabHelper.OPEN_STORE_NAME, "org.onepf.trivialdrive.openstorename.infinite_gas");
+    ```
+
+
+T-Store
+-------
+1. In the AndroidManifest.xml add the following permissions
+
+    ```xml
+    <uses-permission android:name="android.permission.RECEIVE_SMS"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="com.tmoney.vending.INBILLING" />
+    <permission android:name="com.tmoney.vending.INBILLING" />
+    ```
+
+    and specify the API version
+
+    ```xml
+     <application
+                android:icon="@drawable/ic_launcher"
+                android:label="@string/app_name"
+                android:theme="@style/AppTheme">
+            <meta-data
+                    android:name="iap:api_version"
+                    android:value="13"/>
+    ```
+
+2. Map the SKUs, if required
+
+    ```java
+    OpenIabHelper.mapSku(SKU_PREMIUM, OpenIabHelper.NAME_TSTORE, "tstore_sku_premium");
+    OpenIabHelper.mapSku(SKU_GAS, OpenIabHelper.NAME_TSTORE, "tstore_sku_gas");
+    OpenIabHelper.mapSku(SKU_INFINITE_GAS, OpenIabHelper.NAME_TSTORE, "tstore_sku_infinite_gas");
+    ```
+
+3. In the proguard config file add
+
+    ```proguard
+    # TStore
+    -keep class com.skplanet.dodo.**{*;}
+    -keep class com.skplanet.internal.dodo.**{*;}
+    -keep class com.skplanet.internal.dodo.dev.**{*;}
+    -keep class com.skplanet.internal.dodo.util.**{*;}
+    -keep class com.skplanet.pmss.secure.**{*;}
+    -keep public class android.net.http.SslError
+    -keep public class android.webkit.WebViewClient
+    -keep class com.tmoney.aidl.**{*;}
+    -dontwarn android.webkit.WebView
+    -dontwarn android.net.http.SslError
+    -dontwarn android.webkit.WebViewClient
+    -keepattributes Signature
+    -dontshrink
+    ```
+
+Support instructions for Fortumo billing for Android and NOOK
+=============================================================
+
+Before start to work with OpenIab library
+-----------------------------------------
+Create a Fortumo account and add a required number of <a href="http://developers.fortumo.com/in-app-purchasing-on-nook/">NOOK</a> and <a href="http://developers.fortumo.com/in-app-purchasing-on-android/">Android</a> services.
+One service corresponds to one price, e.g. for 3 in-apps with different prices you should create 3 different services.
+
+OpenIab setup
 -------------
-1. Make sure that FortumoInApp-android-9.1.2-o.jar is attached to the project.
+1. Make sure that <a href="https://github.com/onepf/OpenIAB/blob/master/library/libs/FortumoInApp-android-9.1.2-o.jar">FortumoInApp-android-9.1.2-o.jar</a> is attached to the project.
 
 2. In the AndroidManifest.xml add the following permissions
 
     ```xml
+    <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <uses-permission android:name="android.permission.RECEIVE_SMS" />
     <uses-permission android:name="android.permission.SEND_SMS" />
@@ -224,129 +347,16 @@ Fortumo support
     mHelper = new OpenIabHelper(this, options);
     ```
 
-4. Add <i>inapps_products.xml</i> (contains data about all in-app products in terms similar to Google Play) and <i>fortumo_inapps_details.xml</i> (contains data about your Fortumo services) files to the assets folder.
+4. Add <a href="https://github.com/onepf/AppDF/blob/xsd-for-inapps/specification/inapp-description.xsd">inapps_products.xml</a> (in-app products description in terms similar to Google Play) and
+<a href="https://github.com/onepf/AppDF/blob/xsd-for-inapps/specification/fortumo-products-description.xsd">fortumo_inapps_details.xml</a> (data about your Fortumo services) files to the assets folder.
+You can find a sample <a href="https://github.com/onepf/OpenIAB/tree/master/samples/trivialdrive/assets">here.</a>
 
-    XSD for <i>inapps_products.xml</i>
-    https://github.com/onepf/AppDF/blob/xsd-for-inapps/specification/inapp-description.xsd
-
-    XSD for <i>fortumo_inapps_details.xml</i>
-    https://github.com/onepf/AppDF/blob/xsd-for-inapps/specification/fortumo-products-description.xsd
-
-    You can find the sample here https://github.com/onepf/OpenIAB/tree/master/samples/trivialdrive/assets.
-
-
-
-Samsung Apps support
--------------
-1. In the AndroidManifest.xml add the corresponding billing permission
-
-    ```xml
-     <uses-permission android:name="com.sec.android.iap.permission.BILLING" />
-    ```
-
-2. Map the SKUs if required.
-   Remember, Samsung Apps describes an item it terms of Item Group ID and Item ID.
-
-   ```java
-   //format "group_id/item_id"
-   OpenIabHelper.mapSku(SKU_PREMIUM, OpenIabHelper.NAME_SAMSUNG, "100000100696/000001003746");
-   OpenIabHelper.mapSku(SKU_GAS, OpenIabHelper.NAME_SAMSUNG, "100000100696/000001003744");
-   OpenIabHelper.mapSku(SKU_INFINITE_GAS, OpenIabHelper.NAME_SAMSUNG, "100000100696/000001003747");
-   ```
-
-3. Instantiate ``` new OpenIabHelper ``` using an Activity instance.
-   Activity context is required to call  ``` startActivityForResult() ``` for SamsungAccount Activity.
-
-4. In the proguard configuration add
+5. In the proguard config file add
 
     ```proguard
-    # SAMSUNG
-    -keep class com.sec.android.iap.**
-    ```
-
-
-Open Store support
--------------
-1. Add the corresponding billing permission
-
-    ```xml
-    <uses-permission android:name="org.onepf.openiab.permission.BILLING" />
-    ```
-
-2. Provide a public key
-
-    ```java
-    Map<String, String> storeKeys = new HashMap<String, String>();
-    storeKeys.put(OpenIabHelper.OPEN_STORE_NAME, openStorePublicKey);
-    OpenIabHelper.Options options = new OpenIabHelper.Options();
-    options.storeKeys = storeKeys;
-    mHelper = new OpenIabHelper(this, options);
-    //or
-    mHelper = new OpenIabHelper(this, storeKeys);
-    ```
-otherwise verify purchases on your server side.
-
-3. Map the SKUs if required
-
-    ```java
-    OpenIabHelper.mapSku(SKU_PREMIUM, OpenIabHelper.OPEN_STORE_NAME, "org.onepf.trivialdrive.openstorename.premium");
-    OpenIabHelper.mapSku(SKU_GAS, OpenIabHelper.OPEN_STORE_NAME, "org.onepf.trivialdrive.openstorename.gas");
-    OpenIabHelper.mapSku(SKU_INFINITE_GAS, OpenIabHelper.OPEN_STORE_NAME, "org.onepf.trivialdrive.openstorename.infinite_gas");
-    ```
-
-
-T-Store support
--------------
-1. In the AndroidManifest.xml add the following permissions
-
-    ```xml
-    <uses-permission android:name="android.permission.RECEIVE_SMS"/>
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
-    <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-    <uses-permission android:name="com.tmoney.vending.INBILLING" />
-    <permission android:name="com.tmoney.vending.INBILLING" />
-    ```
-
-    and specify the API version
-
-    ```xml
-     <application
-                android:icon="@drawable/ic_launcher"
-                android:label="@string/app_name"
-                android:theme="@style/AppTheme">
-            <meta-data
-                    android:name="iap:api_version"
-                    android:value="13"/>
-    ```
-
-2. Map the SKUs, if required
-
-    ```java
-    OpenIabHelper.mapSku(SKU_PREMIUM, OpenIabHelper.NAME_TSTORE, "tstore_sku_premium");
-    OpenIabHelper.mapSku(SKU_GAS, OpenIabHelper.NAME_TSTORE, "tstore_sku_gas");
-    OpenIabHelper.mapSku(SKU_INFINITE_GAS, OpenIabHelper.NAME_TSTORE, "tstore_sku_infinite_gas");
-    ```
-
-3. In the proguard config add
-
-    ```proguard
-    # TStore
-    -keep class com.skplanet.dodo.**{*;}
-    -keep class com.skplanet.internal.dodo.**{*;}
-    -keep class com.skplanet.internal.dodo.dev.**{*;}
-    -keep class com.skplanet.internal.dodo.util.**{*;}
-    -keep class com.skplanet.pmss.secure.**{*;}
-    -keep public class android.net.http.SslError
-    -keep public class android.webkit.WebViewClient
-    -keep class com.tmoney.aidl.**{*;}
-    -dontwarn android.webkit.WebView
-    -dontwarn android.net.http.SslError
-    -dontwarn android.webkit.WebViewClient
-    -keepattributes Signature
-    -dontshrink
-    ```
-
+     # FORTUMO
+     -keep class mp.** { *; }
+     ```
 
 Unity Plugin
 =====
