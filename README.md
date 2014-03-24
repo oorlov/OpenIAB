@@ -108,10 +108,10 @@ https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/
 
 
 Support instructions for the stores
-=====
+===================================
 
-Google Play support
--------------
+Google Play
+-----------
 1. Add the corresponding billing permission
 
     ```xml
@@ -140,8 +140,8 @@ Google Play support
      ```
 
 
-Amazon support
--------------
+Amazon
+------
 1. In the AndroidManifest.xml add the corresponding billing permission
 
     ```xml
@@ -180,64 +180,8 @@ Remember, the SKUs must be unique across your Amazon developer account.
     -dontoptimize
     ```
 
-Fortumo support
--------------
-1. Make sure that FortumoInApp-android-9.1.2-o.jar is attached to the project.
-
-2. In the AndroidManifest.xml add the following permissions
-
-    ```xml
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
-    <uses-permission android:name="android.permission.RECEIVE_SMS" />
-    <uses-permission android:name="android.permission.SEND_SMS" />
-    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
-    ```
-
-   and declare the Fortumo SDK objects
-
-     ```xml
-     <!-- Declare these objects, this is part of Fortumo SDK,
-         and should not be called directly -->
-      <receiver android:name="mp.MpSMSReceiver">
-            <intent-filter>
-                <action android:name="android.provider.Telephony.SMS_RECEIVED"/>
-            </intent-filter>
-        </receiver>
-        <service android:name="mp.MpService"/>
-        <service android:name="mp.StatusUpdateService"/>
-        <activity android:name="mp.MpActivity"
-                  android:theme="@android:style/Theme.Translucent.NoTitleBar"
-                  android:configChanges="orientation|keyboardHidden|screenSize"/>
-     ```
-
-3. In the code setup an Options object
-
-    ```java
-    OpenIabHelper.Options options = new OpenIabHelper.Options();
-    //set supportFortumo flag to true
-    options.supportFortumo = true;
-    //or
-    List<Appstore> storeList = new ArrayList<Appstore>();
-    storeList.add(new FortumoStore(this));
-    //by the way, you can add other stores object to the list
-    options.availableStores = storeList;
-    mHelper = new OpenIabHelper(this, options);
-    ```
-
-4. Add <i>inapps_products.xml</i> (contains data about all in-app products in terms similar to Google Play) and <i>fortumo_inapps_details.xml</i> (contains data about your Fortumo services) files to the assets folder.
-
-    XSD for <i>inapps_products.xml</i>
-    https://github.com/onepf/AppDF/blob/xsd-for-inapps/specification/inapp-description.xsd
-
-    XSD for <i>fortumo_inapps_details.xml</i>
-    https://github.com/onepf/AppDF/blob/xsd-for-inapps/specification/fortumo-products-description.xsd
-
-    You can find the sample here https://github.com/onepf/OpenIAB/tree/master/samples/trivialdrive/assets.
-
-
-
-Samsung Apps support
--------------
+Samsung Apps
+------------
 1. In the AndroidManifest.xml add the corresponding billing permission
 
     ```xml
@@ -265,8 +209,8 @@ Samsung Apps support
     ```
 
 
-Open Store support
--------------
+Open Store
+----------
 1. Add the corresponding billing permission
 
     ```xml
@@ -295,8 +239,8 @@ otherwise verify purchases on your server side.
     ```
 
 
-T-Store support
--------------
+T-Store
+-------
 1. In the AndroidManifest.xml add the following permissions
 
     ```xml
@@ -347,6 +291,72 @@ T-Store support
     -dontshrink
     ```
 
+Support instructions for Fortumo carrier billing
+================================================
+
+Before start to work with OpenIab library
+-----------------------------------------
+Create a Fortumo account and add a required number of services. One service corresponds to one price, e.g. for 3 inapps with different prices you should create 3 different services.
+You can find all required instructions <a href="http://developers.fortumo.com/in-app-purchasing-on-android/service-setup/">here.</a>
+
+OpenIab setup
+-------------
+1. Make sure that <a href="https://github.com/onepf/OpenIAB/blob/master/library/libs/FortumoInApp-android-9.1.2-o.jar">FortumoInApp-android-9.1.2-o.jar</a> is attached to the project.
+
+2. In the AndroidManifest.xml add the following permissions
+
+    ```xml
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.RECEIVE_SMS" />
+    <uses-permission android:name="android.permission.SEND_SMS" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    ```
+
+   and declare the Fortumo SDK objects
+
+     ```xml
+     <!-- Declare these objects, this is part of Fortumo SDK,
+         and should not be called directly -->
+      <receiver android:name="mp.MpSMSReceiver">
+            <intent-filter>
+                <action android:name="android.provider.Telephony.SMS_RECEIVED"/>
+            </intent-filter>
+        </receiver>
+        <service android:name="mp.MpService"/>
+        <service android:name="mp.StatusUpdateService"/>
+        <activity android:name="mp.MpActivity"
+                  android:theme="@android:style/Theme.Translucent.NoTitleBar"
+                  android:configChanges="orientation|keyboardHidden|screenSize"/>
+     ```
+
+4. In the code setup an Options object
+
+    ```java
+    OpenIabHelper.Options options = new OpenIabHelper.Options();
+    //set supportFortumo flag to true
+    options.supportFortumo = true;
+    //or
+    List<Appstore> storeList = new ArrayList<Appstore>();
+    storeList.add(new FortumoStore(this));
+    //by the way, you can add other stores object to the list
+    options.availableStores = storeList;
+    mHelper = new OpenIabHelper(this, options);
+    ```
+
+5. Add <a href="https://github.com/onepf/AppDF/blob/xsd-for-inapps/specification/inapp-description.xsd">inapps_products.xml</a> (in-app products description in terms similar to Google Play) and
+<a href="https://github.com/onepf/AppDF/blob/xsd-for-inapps/specification/fortumo-products-description.xsd">fortumo_inapps_details.xml</a> (data about your Fortumo services) files to the assets folder.
+You can find a sample <a href="https://github.com/onepf/OpenIAB/tree/master/samples/trivialdrive/assets">here.</a>
+
+Support instructions for Fortumo in-app purchasing on NOOK
+==========================================================
+Quite the same as Support instructions for Fortumo carrier billing.
+But in the AndroidManifest.xml add only 2 following permissions
+
+    ```xml
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    ```
 
 Unity Plugin
 =====
