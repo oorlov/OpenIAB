@@ -86,18 +86,18 @@ public class IabHelper implements AppstoreInAppBillingService {
     String mDebugTag = TAG;
 
     // Is setup done?
-    boolean mSetupDone = false;
+    volatile boolean mSetupDone = false;
 
     // Are subscriptions supported?
     boolean mSubscriptionsSupported = false;
 
     // Is an asynchronous operation in progress?
     // (only one at a time can be in progress)
-    boolean mAsyncInProgress = false;
+    volatile boolean mAsyncInProgress = false;
 
     // (for logging/debugging)
     // if mAsyncInProgress == true, what asynchronous operation is in progress?
-    String mAsyncOperation = "";
+    volatile String mAsyncOperation = "";
 
     // Context we were passed during initialization
     Context mContext;

@@ -185,6 +185,7 @@ public class MainActivity extends Activity {
         storeKeys.put(OpenIabHelper.NAME_GOOGLE, base64EncodedPublicKey);
 //      storeKeys.put(OpenIabHelper.NAME_AMAZON, "Unavailable. Amazon doesn't support RSA verification. So this mapping is not needed"); //
 //      storeKeys.put(OpenIabHelper.NAME_SAMSUNG,"Unavailable. SamsungApps doesn't support RSA verification. So this mapping is not needed"); //
+//      storeKeys.put(OpenIabHelper.NAME_NOKIA,  "Unavailable. Nokia Store doesn't support RSA verification. So this mapping is not needed"); //
         storeKeys.put("com.yandex.store", YANDEX_PUBLIC_KEY);
         storeKeys.put("Appland", APPLAND_PUBLIC_KEY);
 
