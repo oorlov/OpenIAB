@@ -90,6 +90,11 @@ public class OpenIabHelper {
     /** Necessary to initialize SamsungApps. For other stuff {@link #context} is used */
     private Activity activity;
     
+    /** 
+     * Simple IABHelper setup listener is called from onServiceConnected() method 
+     * that triggered by the system in main thread. 
+     * With notiftHandler we call listener in thread startSetup() is launched at 
+     */
     private Handler notifyHandler = null;
     
     /** selected appstore */
@@ -329,7 +334,7 @@ public class OpenIabHelper {
      *  available store or the flag {@link org.onepf.oms.OpenIabHelper.Options#supportFortumo} is set to true, it also will be checked for an inventory.
      *
      *  Should be called from UI thread
-     *  @param listener - called when setup is completed
+     *  @param listener - called when setup is completed. Called in the same thread
      */
     public void startSetup(final IabHelper.OnIabSetupFinishedListener listener) {
         if (listener == null){

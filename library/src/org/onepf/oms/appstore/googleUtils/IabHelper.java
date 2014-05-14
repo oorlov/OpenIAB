@@ -246,7 +246,9 @@ public class IabHelper implements AppstoreInAppBillingService {
                         logDebug("Subscriptions NOT AVAILABLE. Response: " + response);
                     }
 
-                    mSetupDone = true;
+                    synchronized (IabHelper.this) {
+                        mSetupDone = true;
+                    }
                 } catch (RemoteException e) {
                     if (listener != null) {
                         listener.onIabSetupFinished(new IabResult(IABHELPER_REMOTE_EXCEPTION,
@@ -800,7 +802,7 @@ public class IabHelper implements AppstoreInAppBillingService {
 
 
     // Checks that setup was done; if not, throws an exception.
-    void checkSetupDone(String operation) {
+    synchronized void checkSetupDone(String operation) {
         if (!mSetupDone) {
             logError("Illegal state for operation (" + operation + "): IAB helper is not set up.");
             throw new IllegalStateException("IAB helper is not set up. Can't perform operation: " + operation);
