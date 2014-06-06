@@ -36,9 +36,19 @@ public class UnityProxyActivity extends Activity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         Log.d(UnityPlugin.TAG, "onActivityResult(" + requestCode + ", " + resultCode + ", " + data);
+        
+        if (getIntent().getExtras() != null) {
+            Bundle bundle = getIntent().getExtras();
+            for (String key : bundle.keySet()) {
+                Object value = bundle.get(key);
+                Log.d(UnityPlugin.TAG, String.format("%s %s (%s)", key, value.toString(), value.getClass().getName()));
+            }
+        }
 
         // Pass on the activity result to the helper for handling
-        if (!UnityPlugin.instance().getHelper().handleActivityResult(requestCode, resultCode, data)) {
+        if (!UnityPlugin.instance()
+                .getHelper()
+                .handleActivityResult(requestCode, resultCode, data)) {
             // not handled, so handle it ourselves (here's where you'd
             // perform any handling of activity results not related to in-app
             // billing...
